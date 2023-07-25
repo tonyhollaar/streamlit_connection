@@ -521,12 +521,14 @@ def main():
             st.markdown('---')
             # absolute values plot
             st.plotly_chart(create_gas_price_line_graph(data_df), use_container_width = True)
+            
             st.markdown('---')
             # month over month % change plot
             st.plotly_chart(plot_gas_price(data_df), use_container_width = True)
           
             # Display the data in Streamlit
             st.markdown('---')
+            my_text_paragraph('<b>Raw Data</b>')
             st.dataframe(data_df, use_container_width = True)
             st.caption('source: U.S. Bureau of Labor Statistics Data')
             
