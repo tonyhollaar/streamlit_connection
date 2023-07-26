@@ -1,8 +1,8 @@
 # -*- coding: utf-8 -*-
 """
 Created on Mon Jul 24 15:13:46 2023
-
 @author: tholl
+data source: https://data.bls.gov/timeseries/APU000074714
 """
 # =============================================================================
 #   _      _____ ____  _____            _____  _____ ______  _____ 
@@ -43,6 +43,7 @@ font_style = """
             <style>
             @import url('https://fonts.googleapis.com/css2?family=Lobster&display=swap');
             @import url('https://fonts.googleapis.com/css2?family=Ysabeau+SC:wght@200&display=swap');
+            @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@500&display=swap');
             /* Set the font family for header elements */
             h2 {
                 font-family: 'Lobster', cursive;
@@ -393,10 +394,6 @@ def create_gas_price_line_graph(df):
             tickcolor="black",
             rangemode="tozero",
             gridcolor='whitesmoke',
-# =============================================================================
-#             dtick="M3",  # Set interval 3 months
-#             tickformat="%b\n%Y",  # Format for date ticks
-# =============================================================================
             tickangle=0  # Do not rotate text 90 degrees
         ),
         yaxis=dict(
@@ -449,24 +446,28 @@ def social_media_links(margin_before = 30):
         st.markdown(github_code, unsafe_allow_html=True)
     with col10:
         st.markdown(buymeacoffee_code, unsafe_allow_html=True)
+        
+@st.cache_data
+def convert_df(df):
+    # IMPORTANT: Cache the conversion to prevent computation on every rerun
+    return df.to_csv().encode('utf-8')
 
 def main():
     with st.sidebar:
+        
         # Display logo image in sidebar
         st.image('./images/gaspricewatcher.PNG')
         
         # Display user form with options to filter data in sidebar
         with st.sidebar.form("user_form"):
             my_text_paragraph('User Settings')
-            start_year, end_year = st.select_slider(label = "Select Year Range", options=list(range(1976, 2024)), value=(1976, 2023))  # Default range of years
+            start_year, end_year = st.select_slider(label = "Select Year Range", options = list(range(2014, 2024)), value = (2014, 2023))  # Default range of years
             metric = st.radio(label = "Select Metric:", options = ["Gallons", "Liters"], index = 0) # Default selection is "Gallons"
-            fuel_tank_size = st.number_input('Enter the Fuel Tank Size (in gallons)', 
-                                             min_value=1, 
-                                             value=14,
-                                             step=1)
+            fuel_tank_size = st.number_input('Enter the Fuel Tank Size (in gallons)', min_value = 1, value = 14, step = 1)
+            battery_capacity = st.number_input('Enter the Battery Usable Capacity (in KWH)', min_value = 1, value = 100, step = 1)
             submit_button = st.form_submit_button(label="Submit", use_container_width = True)
     
-        # show social media links    
+        # Show Social Media links    
         social_media_links(margin_before=20)
     
     # If user presses Submit button, run code
@@ -474,7 +475,7 @@ def main():
         with st.expander('', expanded = True):
 
             my_text_header('Gasoline', my_font_size='54px')
-            #my_text_paragraph('unleaded regular, per gallon')
+            my_text_paragraph('unleaded regular, per gallon')
 
             # =============================================================================
             # Step 1: Create the custom BLSConnection with a connection_name
@@ -484,58 +485,137 @@ def main():
             # =============================================================================
             # Step 2: Input parameters for the API call
             # =============================================================================
-            series_id = 'APU000074714' # Gasoline, unleaded regular, per gallon/3.785 liters in U.S. city average, average price, not seasonally adjusted, source: https://data.bls.gov/timeseries/APU000074714
+            # two timeseries are called from the API:
+            # APU000074714 -> Gasoline, unleaded regular, per gallon/3.785 liters in U.S. city average, average price, not seasonally adjusted, source: https://data.bls.gov/timeseries/APU000074714
+            # APU000072610 -> Electricity per KWH in U.S. city average, average price, not seasonally adjusted #source: https://beta.bls.gov/dataViewer/view/timeseries/APU000072610
+            seriesids_list = ['APU000074714', 'APU000072610']
             start_year_str = str(start_year)
             end_year_str = str(end_year)
-        
+
             # =============================================================================
             # Step 3: Fetch data using the custom connection
             # =============================================================================
-            data_df = connection.query(series_id, start_year_str, end_year_str)
-            
-            if data_df is None:
-                data_df = pd.read_excel('./demo_data/output.xlsx')
-            
-            # =============================================================================
-            # Step 4: Show Plot      
-            # =============================================================================
-            #series_id_dict = {'APU000074714': 'gasoline'}
-            if series_id == 'APU000074714':  # Check if series_id is equal to 'gasoline'
-                data_df['Price per Gallon ($)'] = data_df['value']
-                data_df['Price per Liter ($)'] = data_df['Price per Gallon ($)'] / 3.785
+            # retrieve a dictionary of dataframe(s) e.g. if multiple data id's are provided, which can be individually retrieved per dataset from https://www.bls.gov/developers/home.htm
+            dataframes_dict = connection.query(seriesids_list, start_year_str, end_year_str)
+
+            try:     
+                # Assign individual dataframes to named variables using tuple unpacking
+                gas_df = dataframes_dict['APU000074714']
+                electricity_df = dataframes_dict['APU000072610']
+            except:
+                # BACKUP METHOD to retrieve saved data from .CSV file in case live connection reached maximum of e.g. 25 queries a day
+                if gas_df is None:
+                    gas_df = pd.read_excel('./demo_data/gas_df.xlsx')
+                    
+                if electricity_df is None:
+                    electricity_df = pd.read_excel('./demo_data/electricity_df.xlsx')
+                else:
+                    st.error('Error: the dataset could not be retrieved via API nor a backup copy')
                 
-            # Display the Dashboard in Streamlit
-            latest_value = data_df['value'].iloc[-1]  # Get the latest value
-            delta = data_df['perct_change_value'].iloc[-1]  # Get the delta
+            # =============================================================================
+            # Step 4: preprocess DF   
+            # =============================================================================
+            gas_df['Price per Gallon ($)'] = gas_df['value']
+            gas_df['Price per Liter ($)'] = gas_df['Price per Gallon ($)'] / 3.785
+                
+            # =============================================================================
+            # Step 5: Display Dashboard Metrics in Streamlit
+            # =============================================================================
+            formatted_date = gas_df['date'].iloc[-1].strftime('%m-%d-%Y')
+            my_text_paragraph(my_string = f'latest data as of {formatted_date}', my_font_size='12px')
+            
+            latest_value = gas_df['value'].iloc[-1]  # Get the latest value
+            delta = gas_df['perct_change_value'].iloc[-1]  # Get the delta
             
             # Show title/caption centered on page
-            col1, col2, col3, col4, col5 = st.columns([12, 12, 1, 12, 10])
+            col1, col2, col3, col4, col5 = st.columns([14, 12, 1, 12, 10])
             with col2:
                 st.metric(label='Price per Gallon', value = f"${latest_value:.2f}", delta= f"{delta*100:.2f}%", label_visibility = 'visible',  delta_color="inverse", help = '	Gasoline, unleaded regular, per gallon/3.785 liters in U.S. city average, average price, not seasonally adjusted.')
             with col4:
                 st.metric(label = 'Full Tank', value = f"${fuel_tank_size*latest_value:.2f}",  delta= f"${delta*fuel_tank_size*latest_value:.2f}", label_visibility = 'visible',  delta_color="inverse", help = 'total cost of fuel for a full tank and month-to-month variance in usd')
+                        
+            # =============================================================================
+            # Electricity  Metrics           
+            # =============================================================================
+            latest_value = electricity_df['value'].iloc[-1]  # Get the latest value
+            delta = electricity_df['perct_change_value'].iloc[-1]  # Get the delta
+            
+            my_text_header('Electricity', my_font_size = '48px', my_font_family = 'Orbitron')
+            my_text_paragraph('average electricity price, per kWh')
+            formatted_date = electricity_df['date'].iloc[-1].strftime('%m-%d-%Y')
+            my_text_paragraph(my_string = f'latest data as of {formatted_date}', my_font_size='12px')
+            
+            col1, col2, col3, col4, col5 = st.columns([16, 12, 1, 12, 10])
+            with col2:
+                st.metric(label='Price per kWh', value = f"${latest_value:.2f}", delta= f"{delta*100:.2f}%", label_visibility = 'visible',  delta_color="inverse", help = 'Price in USD of Electricity per Kilowatt-Hour (kWh)')
+            with col4:
+                st.metric(label = 'Usable Capacity Battery', value = f"${battery_capacity*latest_value:.2f}",  delta= f"${delta*battery_capacity*latest_value:.2f}", label_visibility = 'visible',  delta_color="inverse", help = 'Battery capacity in kWh')
             
             # =============================================================================
             # Display the graph in Streamlit app
             # =============================================================================
             st.markdown('---')
-            # absolute values plot
-            st.plotly_chart(create_gas_price_line_graph(data_df), use_container_width = True)
+            # Absolute Values plot
+            st.plotly_chart(create_gas_price_line_graph(gas_df), use_container_width = True)
             
             st.markdown('---')
-            # month over month % change plot
-            st.plotly_chart(plot_gas_price(data_df), use_container_width = True)
+            # Month over Month % Change plot
+            st.plotly_chart(plot_gas_price(gas_df), use_container_width = True)
           
             # Display the data in Streamlit
             st.markdown('---')
-            my_text_paragraph('<b>Raw Data</b>')
-            st.dataframe(data_df, use_container_width = True)
+            
+            # header
+            my_text_paragraph('<b>Raw Data - Gasoline</b>')
+            
+            # Show animation in Streamlit 
+            show_lottie_animation(url = './images/animation_lkhk7c4h.json', key = 'oil', width=160, speed = 1, col_sizes = [45,40,40])
+            
+            # Show Dataframe in Streamlit
+            st.dataframe(gas_df, use_container_width = True)
+            
+            # Caption for data source
             st.caption('source: U.S. Bureau of Labor Statistics Data')
             
-            show_lottie_animation(url = './images/animation_lkhk7c4h.json', key = 'oil', width=160, speed = 1, col_sizes = [45,40,40])
+            # Download Button to .CSV
+            csv_gas = convert_df(gas_df)
+            col1, col2, col3 = st.columns([54,30,50])
+            with col2: 
+                st.download_button(label = "🔲 Download",
+                                   data = csv_gas,
+                                   file_name = 'Gas_Prices.CSV',
+                                   help = 'Download your dataframe to .CSV',
+                                   mime='text/csv')
+
+            # =============================================================================
+            # Electricity DF            
+            # =============================================================================
+            # Display the data in Streamlit
+            st.markdown('---')
+            
+            # header
+            my_text_paragraph('<b>Raw Data - Electricity</b>')
+            
+            # Show animation in Streamlit 
+            show_lottie_animation(url = './images/animation_lkj56bhq.json', key = 'electricity', width=160, speed = 1, col_sizes = [45,40,40])
+            
+            # Show Dataframe in Streamlit
+            st.dataframe(electricity_df, use_container_width = True)
+            
+            # Caption for data source
+            st.caption('source: U.S. Bureau of Labor Statistics Data')
+            
+            # Download Button to .CSV
+            csv_electricity = convert_df(electricity_df)
+            col1, col2, col3 = st.columns([54,30,50])
+            with col2: 
+                st.download_button(label = "🔲 Download",
+                                   data = csv_electricity,
+                                   file_name = 'Electricity_Prices.CSV',
+                                   help = 'Download your dataframe to .CSV',
+                                   mime='text/csv')
     else:
         # Show Cover Image
-        #st.image('./images/COVER_GASOLINE.PNG')
         create_flipcard_gasoline(image_path_front_card ='./images/COVER_GASOLINE.PNG', font_size_back='18px')
     
 if __name__ == "__main__":
