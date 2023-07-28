@@ -211,7 +211,6 @@ def create_flipcard_gasoline(image_path_front_card=None, font_size_back='10px', 
           text-align: center;
         }}
         .front {{
-          background: linear-gradient(to bottom left, #4e3fce, #7a5dc7, #9b7cc2, #bb9bbd, #c2b1c4);
           color: white;
           transform: rotateY(0deg);
         }}
@@ -463,6 +462,30 @@ def update_my_metric(metric):
         else:
             st.session_state['my_metric'] = 'Gallon'
 
+       
+def rounded_image(image_path, corner_radius):
+    # Load the image as bytes
+    with open(image_path, "rb") as img_file:
+        img_bytes = img_file.read()
+
+    # Convert the image bytes to base64
+    img_base64 = base64.b64encode(img_bytes).decode("utf-8")
+
+    # Define the HTML with inline CSS for rounded corners and original fit
+    html = f'''
+    <div style="
+        border-radius: {corner_radius}px;
+        overflow: hidden;
+        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+        display: flex;
+        justify-content: center;
+    ">
+        <img src="data:image/png;base64,{img_base64}" style="width: 100%; height: 100%; object-fit: contain;" />
+    </div>
+    '''
+
+    # Display the rounded image using st.markdown
+    st.markdown(html, unsafe_allow_html=True)
 
 def main():
     
@@ -501,15 +524,21 @@ def main():
                 # electricity
                 battery_capacity = st.number_input('Enter the Battery Usable Capacity (in KWH)', min_value = 1, value = 81  , step = 1)
                 submit_button = st.form_submit_button(label="Submit", use_container_width = True)
-    
+            
             # Show Social Media links    
-            social_media_links(margin_before = 6)
+            social_media_links(margin_before = 1)
            
         # If user presses Submit button, run code
         if submit_button:
             with st.expander('', expanded = True):
-                my_text_header('Gasoline', my_font_size='54px')
-                my_text_paragraph(f'unleaded (in {my_metric.lower()}s)')
+                if gas_type is not 'Diesel':
+                    my_text_header('Gasoline', my_font_size='54px')
+                    my_text_paragraph(f'{gas_type.lower()} unleaded (in {my_metric.lower()}s)')
+                elif gas_type is 'Diesel':
+                    my_text_header('Diesel', my_font_size='54px')
+                    my_text_paragraph(f'(in {my_metric.lower()}s)')
+                    
+                    
     
                 # =============================================================================
                 # Step 1: Create the custom BLSConnection with a connection_name
@@ -579,6 +608,8 @@ def main():
                 with col6:
                     # per year 489 gallons #source: https://www.api.org/news-policy-and-issues/blog/2022/05/26/top-numbers-driving-americas-gasoline-demand
                     st.metric(label = 'Estimated Yearly Cost', value = f"${usage_per_year*latest_value:.2f}",  delta= f"${delta*usage_per_year*latest_value:.2f}", label_visibility = 'visible',  delta_color="inverse", help = 'total estimated cost of fuel per year - with 489 gallons')
+                
+                
                 # =============================================================================
                 # Electricity  Metrics           
                 # =============================================================================
@@ -596,8 +627,14 @@ def main():
                     st.metric(label='Price per kWh', value = f"${latest_value:.2f}", delta= f"{delta*100:.2f}%", label_visibility = 'visible',  delta_color="inverse", help = 'Price in USD of Electricity per Kilowatt-Hour (kWh)')
                 with col4:
                     st.metric(label = 'Usable Capacity Battery', value = f"${battery_capacity*latest_value:.2f}",  delta= f"${delta*battery_capacity*latest_value:.2f}", label_visibility = 'visible',  delta_color="inverse", help = 'Battery capacity in kWh')
-                
-                
+            
+
+
+
+
+
+
+            rounded_image(image_path = "./images/car_headlights.png", corner_radius = 5)
         # if user did not press submit button on dashboard tab
         else:
             # Show Cover Image
@@ -615,8 +652,8 @@ def main():
                 st.markdown('---')
                 # Month over Month % Change plot
                 st.plotly_chart(plot_gas_price(gas_df), use_container_width = True)
-        
-        
+
+        rounded_image(image_path = './images/oldtimer.png', corner_radius = 5)
     with tab3:
         with st.expander('', expanded = True):
         
