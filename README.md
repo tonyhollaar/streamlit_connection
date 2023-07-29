@@ -16,14 +16,14 @@ The Streamlit Connection API is a custom-built Python package that allows you to
 
 To install the Streamlit Connection API, simply run the following command:
 ```python
-pip install streamlit_bls_connection
+pip install streamlit-bls-connection
 ```
 
 ## Example Streamlit API:
 
 ```python
 import streamlit as st
-from bls_connection import BLSConnection
+from streamlit_bls_connection import BLSConnection
 
 # Step 1: Setup connection to US Bureau of Labor Statistics
 connection = BLSConnection("bls_connection")
