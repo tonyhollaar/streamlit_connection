@@ -3,7 +3,7 @@
 # Streamlit App
 This application is created as part of the **Streamlit Connections Hackathon 🎉** [contest](https://discuss.streamlit.io/t/connections-hackathon/47574). The goal of this app is to demonstrate how to easily set up and retrieve data from one of my favorite data **APIs** (Application Programming Interfaces) – the public datasets from the *U.S. Bureau of Labor Statistics* (BLS) – by utilizing a custom-built **Streamlit** connection 🔌. This allows you to query the dataset(s) and save them as [pandas](https://pandas.pydata.org/) dataframes, providing a more user-friendly approach compared to the original Python code from BLS, which can be found [here](https://www.bls.gov/developers/api_python.htm#python2).
 
-##Features
+## Features
 
 - Display data retrieved from the BLS API in a user-friendly manner using Streamlit.
 - Visualize datasets with interactive charts and plots.
@@ -22,9 +22,6 @@ pip install streamlit_bls_connection
 ## Example Streamlit API:
 
 ```python
-# Step 0: Install the package
-pip install streamlit_bls_connection
-
 import streamlit as st
 from bls_connection import BLSConnection
 
