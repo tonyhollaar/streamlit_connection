@@ -1,7 +1,6 @@
 # Streamlit Connection API
 
 ![gaspricewatcher_logo](./images/gaspricewatcher.png)
-![Streamlit Connection API](./images/streamlit-logo-secondary-colormark-darktext.png)
 
 This application is created as part of the **Streamlit Connections Hackathon 🎉** [contest](https://discuss.streamlit.io/t/connections-hackathon/47574). The goal of this app is to demonstrate how to easily set up and retrieve data from one of my favorite data **APIs** (Application Programming Interfaces) – the public datasets from the *U.S. Bureau of Labor Statistics* (BLS) – by utilizing a custom-built **Streamlit** connection 🔌. This allows you to query the dataset(s) and save them as [pandas](https://pandas.pydata.org/) dataframes, providing a more user-friendly approach compared to the original Python code from BLS, which can be found [here](https://www.bls.gov/developers/api_python.htm#python2).
 
@@ -32,4 +31,14 @@ electricity_df = dataframes_dict['APU000072610']
 
 # Step 5: Show Dataframes in Streamlit
 st.dataframe(gas_df, electricity_df)
+```
 
+##Installation
+
+To install the Streamlit Connection API, simply run the following command:
+```python
+pip install streamlit_bls_connection
+```
+
+##License
+This project is licensed under the MIT License. See the LICENSE file for details.
