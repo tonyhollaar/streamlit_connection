@@ -42,7 +42,8 @@ gas_df = dataframes_dict['APU000074714']
 electricity_df = dataframes_dict['APU000072610']
 
 # Step 5: Show Dataframes in Streamlit
-st.dataframe(gas_df, electricity_df)
+st.dataframe(gas_df)
+st.dataframe(electricity_df)
 ```
 
 ## License
