@@ -16,14 +16,14 @@ data source: https://data.bls.gov/timeseries/APU000074714
 import streamlit as st
 import pandas as pd
 from datetime import datetime
-from bls_connection import BLSConnection
+from streamlit_connection_package.bls_connection import BLSConnection
 import plotly.express as px
 import plotly.graph_objects as go
 from streamlit_lottie import st_lottie
 import json
 import base64
-from fire_state import create_store, form_update, get_state, set_state, get_store, set_store
-
+import numpy as np
+#from fire_state import create_store, form_update, get_state, set_state, get_store, set_store
 
 # =============================================================================
 #   _____        _____ ______    _____ ______ _______ _    _ _____  
@@ -37,7 +37,7 @@ from fire_state import create_store, form_update, get_state, set_state, get_stor
 # SET PAGE CONFIGURATIONS STREAMLIT
 st.set_page_config(page_title = "GASPRICEWATCHER", 
                    layout = "centered", # "centered" or "wide"
-                   page_icon = "🛢️", 
+                   page_icon = "", 
                    initial_sidebar_state = "expanded") # "auto" or "expanded" or "collapsed"
 
 # SET FONT STYLE(S)
@@ -46,6 +46,8 @@ font_style = """
             @import url('https://fonts.googleapis.com/css2?family=Lobster&display=swap');
             @import url('https://fonts.googleapis.com/css2?family=Ysabeau+SC:wght@200&display=swap');
             @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@500&display=swap');
+            @import url('https://fonts.googleapis.com/css2?family=Archivo+Black&display=swap');
+            @import url('https://fonts.googleapis.com/css2?family=Pacifico&display=swap');
             /* Set the font family for header elements */
             h2 {
                 font-family: 'Lobster', cursive;
@@ -92,6 +94,13 @@ st.markdown("""
 #  |_|     \____/|_| \_|\_____|  |_|  |_____\____/|_| \_|_____/ 
 #                                                               
 # =============================================================================
+
+search_icon = """
+<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" fill="currentColor" class="bi bi-search" viewBox="0 0 16 16">
+  <path d="M11.742 10.344a6.5 6.5 0 1 0-1.397 1.398h-.001c.03.04.062.078.098.115l3.85 3.85a1 1 0 0 0 1.415-1.414l-3.85-3.85a1.007 1.007 0 0 0-.115-.1zM12 6.5a5.5 5.5 0 1 1-11 0 5.5 5.5 0 0 1 11 0z"/>
+</svg>
+"""
+
 def my_text_header(my_string,
                    my_text_align='center', 
                    my_font_family='Lobster, cursive;',
@@ -102,18 +111,24 @@ def my_text_header(my_string,
     st.markdown(text_header, unsafe_allow_html=True)
 
 def my_text_paragraph(my_string,
+                       link_url=None,
                        my_text_align='center',
                        my_font_family='Segoe UI, Tahoma, Geneva, Verdana, sans-serif',
                        my_font_weight=200,
                        my_font_size='18px',
                        my_line_height=1.5,
                        add_border=False,
-                       border_color = "#45B8AC"):
+                       border_color="#45B8AC"):
     if add_border:
         border_style = f'border: 2px solid {border_color}; border-radius: 10px; padding: 10px; box-shadow: 0px 4px 4px rgba(0, 0, 0, 0.25);'
     else:
         border_style = ''
-    paragraph = f'<p style="text-align:{my_text_align}; font-family:{my_font_family}; font-weight:{my_font_weight}; font-size:{my_font_size}; line-height:{my_line_height}; background-color: rgba(255, 255, 255, 0); {border_style}">{my_string}</p>'
+    
+    if link_url:
+        paragraph = f'<p style="text-align:{my_text_align}; font-family:{my_font_family}; font-weight:{my_font_weight}; font-size:{my_font_size}; line-height:{my_line_height}; background-color: rgba(255, 255, 255, 0); {border_style}">{my_string} <a href="{link_url}" target="_blank">Click here</a></p>'
+    else:
+        paragraph = f'<p style="text-align:{my_text_align}; font-family:{my_font_family}; font-weight:{my_font_weight}; font-size:{my_font_size}; line-height:{my_line_height}; background-color: rgba(255, 255, 255, 0); {border_style}">{my_string}</p>'
+    
     st.markdown(paragraph, unsafe_allow_html=True)
     
 def vertical_spacer(n):
@@ -413,9 +428,9 @@ def create_gas_price_line_graph(df):
 
     return fig
 
-def social_media_links(margin_before = 30):
+def social_media_links(margin_before = 0):
     vertical_spacer(margin_before)
-    st.markdown('---')
+    
     # Get the URL to link to
     github_url = "https://github.com/tonyhollaar/"  # Replace with your GitHub URL
     medium_url = "https://medium.com/@thollaar"  # Replace with your Medium URL
@@ -462,7 +477,6 @@ def update_my_metric(metric):
         else:
             st.session_state['my_metric'] = 'Gallon'
 
-       
 def rounded_image(image_path, corner_radius):
     # Load the image as bytes
     with open(image_path, "rb") as img_file:
@@ -492,8 +506,9 @@ def main():
     # Define variables
     gas_df = pd.DataFrame()
     electricity_df = pd.DataFrame()
+    latest_value = None
     
-    tab1, tab2, tab3 = st.tabs(['Dashboard', 'Plots', 'Raw Data'])
+    tab1, tab2, tab3, tab4, tab5 = st.tabs(['🛡️ Dashboard', '📈 Plots', '🔢 Raw Data', '🛣️ Route66', 'ℹ️ Streamlit Connection API'])
     with tab1:
         with st.sidebar:
             metric = None
@@ -526,20 +541,18 @@ def main():
                 submit_button = st.form_submit_button(label="Submit", use_container_width = True)
             
             # Show Social Media links    
-            social_media_links(margin_before = 1)
+            social_media_links(margin_before = 4)
            
         # If user presses Submit button, run code
         if submit_button:
             with st.expander('', expanded = True):
-                if gas_type is not 'Diesel':
+                if gas_type != 'Diesel':
                     my_text_header('Gasoline', my_font_size='54px')
-                    my_text_paragraph(f'{gas_type.lower()} unleaded (in {my_metric.lower()}s)')
-                elif gas_type is 'Diesel':
+                    my_text_paragraph(f'{gas_type.lower()} unleaded in {my_metric.lower()}s')
+                elif gas_type == 'Diesel':
                     my_text_header('Diesel', my_font_size='54px')
                     my_text_paragraph(f'(in {my_metric.lower()}s)')
                     
-                    
-    
                 # =============================================================================
                 # Step 1: Create the custom BLSConnection with a connection_name
                 # =============================================================================
@@ -597,7 +610,7 @@ def main():
                 my_text_paragraph(my_string = f'latest data as of {formatted_date}', my_font_size='12px')
                 
                 latest_value = gas_df[f'Price per {my_metric} ($)'].iloc[-1]  # Get the latest value
-                delta = gas_df['perct_change_value'].iloc[-1]  # Get the delta
+                delta = gas_df['perct_change_value'].iloc[-1]                 # Get the delta
                 
                 # Show title/caption centered on page
                 col1, col2, col3, col4, col5, col6, col7 = st.columns([14, 48, 1, 36, 1, 48, 12])
@@ -607,14 +620,14 @@ def main():
                     st.metric(label = 'Full Tank', value = f"${fuel_tank_size*latest_value:.2f}",  delta= f"${delta*fuel_tank_size*latest_value:.2f}", label_visibility = 'visible',  delta_color="inverse", help = 'total cost of fuel for a full tank and month-to-month variance in usd')
                 with col6:
                     # per year 489 gallons #source: https://www.api.org/news-policy-and-issues/blog/2022/05/26/top-numbers-driving-americas-gasoline-demand
-                    st.metric(label = 'Estimated Yearly Cost', value = f"${usage_per_year*latest_value:.2f}",  delta= f"${delta*usage_per_year*latest_value:.2f}", label_visibility = 'visible',  delta_color="inverse", help = 'total estimated cost of fuel per year - with 489 gallons')
+                    st.metric(label = 'Estimated Yearly Cost', value = f"${usage_per_year*latest_value:.2f}",  delta= f"${delta*usage_per_year*latest_value:.2f}", label_visibility = 'visible',  delta_color="inverse", help = f'The total estimated cost is calculated based on a consumption of {int(usage_per_year)} {metric.lower()}, which represents the average usage per registered vehicle in the United States.')
                 
                 
                 # =============================================================================
                 # Electricity  Metrics           
                 # =============================================================================
                 st.markdown('---')
-                latest_value = electricity_df['value'].iloc[-1]  # Get the latest value
+                latest_value_electricity = electricity_df['value'].iloc[-1]  # Get the latest value
                 delta = electricity_df['perct_change_value'].iloc[-1]  # Get the delta
                 
                 my_text_header('Electricity', my_font_size = '48px', my_font_family = 'Orbitron')
@@ -624,17 +637,12 @@ def main():
                 
                 col1, col2, col3, col4, col5 = st.columns([16, 12, 1, 12, 10])
                 with col2:
-                    st.metric(label='Price per kWh', value = f"${latest_value:.2f}", delta= f"{delta*100:.2f}%", label_visibility = 'visible',  delta_color="inverse", help = 'Price in USD of Electricity per Kilowatt-Hour (kWh)')
+                    st.metric(label='Price per kWh', value = f"${latest_value_electricity:.2f}", delta= f"{delta*100:.2f}%", label_visibility = 'visible',  delta_color="inverse", help = 'Price in USD of Electricity per Kilowatt-Hour (kWh)')
                 with col4:
-                    st.metric(label = 'Usable Capacity Battery', value = f"${battery_capacity*latest_value:.2f}",  delta= f"${delta*battery_capacity*latest_value:.2f}", label_visibility = 'visible',  delta_color="inverse", help = 'Battery capacity in kWh')
+                    st.metric(label = 'Usable Capacity Battery', value = f"${battery_capacity*latest_value_electricity:.2f}",  delta= f"${delta*battery_capacity*latest_value_electricity:.2f}", label_visibility = 'visible',  delta_color="inverse", help = 'Battery capacity in kWh')
             
-
-
-
-
-
-
             rounded_image(image_path = "./images/car_headlights.png", corner_radius = 5)
+        
         # if user did not press submit button on dashboard tab
         else:
             # Show Cover Image
@@ -706,7 +714,176 @@ def main():
                                    file_name = 'Electricity_Prices.CSV',
                                    help = 'Download your dataframe to .CSV',
                                    mime='text/csv')
+    with tab4:
+        with st.expander('', expanded = True):
+            my_text_header('ROUTE 66', my_font_size = '48px', my_font_family = 'Archivo Black')
 
+                
+            col1, col2, col3, col4, col5, col6, col7 = st.columns([1, 6, 1, 6, 1, 6, 1])
+            with col2:
+                st.metric(label = 'Distance (in miles)', value = 2278)
+            with col4:
+                st.metric(label = 'Fuel Efficiency (mpg)', value =  25.4, help = 'Average miles per gallon')
+            with col6:
+                if latest_value is not None:
+                    
+                    cost_route66 = round((2278/25.4)*latest_value, 2)
+                
+                    st.metric(label = 'Cost one-way trip', value = f"${cost_route66}", help = 'Estimated cost for one-way trip')
+            
+            # Define the locations and their coordinates along with random population sizes
+            locations = {
+                "Chicago": (41.8781, -87.6298),
+                "Dwight": (41.1036, -88.4252),
+                "Pontiac": (40.8806, -88.6298),
+                "Springfield IL": (39.7817, -89.6501),
+                "Staunton": (39.0128, -89.7928),
+                "St. Louis": (38.6270, -90.1994),
+                "Cuba": (38.0623, -91.4032),
+                "Rolla": (37.9514, -91.7713),
+                "Lebanon": (37.6805, -92.6633),
+                "Springfield MO": (37.2086, -93.2923),
+                "Joplin": (37.0842, -94.5133),
+                "Galena": (37.0758, -94.6413),
+                "Tulsa": (36.1539, -95.9925),
+                "Oklahoma City": (35.4676, -97.5164),
+                "Elk City": (35.4058, -99.4043),
+                "Shamrock": (35.2219, -101.8313),
+                "Amarillo": (35.2219, -101.8313),
+                "Glenrio": (35.0417, -103.9533),
+                "Tucumcari": (35.1717, -103.7246),
+                "Santa Rosa": (34.9381, -104.6774),
+                "Santa Fe": (35.6869, -105.9378),
+                "Albuquerque": (35.0844, -106.6504),
+                "Grants": (35.1478, -107.8514),
+                "Gallup": (35.5281, -108.7426),
+                "Holbrook": (34.9022, -110.1598),
+                "Winslow": (35.0242, -110.6974),
+                "Flagstaff": (35.1983, -111.6513),
+                "Seligman": (35.3258, -112.8766),
+                "Kingman": (35.1894, -114.0530),
+                "Oatman": (35.0264, -114.3834),
+                "Amboy": (34.5531, -115.7500),
+                "Barstow": (34.8958, -117.0173),
+                "Santa Monica Pier, California": (34.0101, -118.4961)
+            }
+        
+            # Random population sizes for demonstration purposes
+            population_sizes = {
+                "Chicago": 2720546,
+                "Dwight": 4070,
+                "Pontiac": 5855,
+                "Springfield IL": 115715,
+                "Staunton": 5008,
+                "St. Louis": 3028385,
+                "Cuba": 3363,
+                "Rolla": 20301,
+                "Lebanon": 14296,
+                "Springfield MO": 167882,
+                "Joplin": 50821,
+                "Galena": 3113,
+                "Tulsa": 651880,
+                "Oklahoma City": 655057,
+                "Elk City": 11970,
+                "Shamrock": 1833,
+                "Amarillo": 199371,
+                "Glenrio": 30,
+                "Tucumcari": 4655,
+                "Santa Rosa": 5587,
+                "Santa Fe": 84683,
+                "Albuquerque": 564036,
+                "Grants": 9142,
+                "Gallup": 21404,
+                "Holbrook": 5232,
+                "Winslow": 9737,
+                "Flagstaff": 77436,
+                "Seligman": 456,
+                "Kingman": 29773,
+                "Oatman": 27,
+                "Amboy": 10,
+                "Barstow": 23878,
+                "Santa Monica Pier, California": 80274
+            }
+            
+            # Create a Pandas DataFrame from the locations dictionary
+            df = pd.DataFrame(locations.values(), columns=["latitude", "longitude"], index=locations.keys())
+        
+            # Add population size and normalize it for size variation
+            df["population"] = [population_sizes[loc] for loc in df.index]
+        
+            # Use pandas qcut to create relative population size bins
+            df["population_bin"] = pd.qcut(df["population"], 10, labels=False)
+            
+            # Calculate the marker size based on the bin (size increases with bin number)
+            df["size"] = 20 + 30 * df["population_bin"] * 200 #multiplied by scaling factor to make it visually appealing in map plot
+                    
+            # Generate random RGBA colors for each location with 50% transparency
+            colors = [(np.random.randint(0, 256), np.random.randint(0, 256), np.random.randint(0, 256), 0.5) for _ in range(len(df))]
+        
+            # Add colors to the DataFrame
+            df["color"] = colors
+        
+            # Display the map using st.map with size and color
+            st.map(df, latitude='latitude', longitude='longitude', size='size', color='color')
+            st.dataframe(df, use_container_width = True)
+            st.image('./images/route66_logo.png')
     
+    # ABOUT TAB
+    with tab5:
+        with st.expander('', expanded = True):
+            my_text_header('Streamlit Connection API', my_font_size = '48px', my_font_family = 'Pacifico')
+            
+            col1, col2, col3 = st.columns([1, 10, 1])
+            with col2:
+                vertical_spacer(2)
+                my_text_paragraph(f'''This application is created as part of the <b><span style="color: #FF4E61;"> Streamlit Connections Hackathon 🎉</span></b> <a href="https://discuss.streamlit.io/t/connections-hackathon/47574" target="_blank">contest</a>. 
+                                  The <i>goal</i> of this app is to demonstrate how to easily setup and retrieve data from one of my favorite data <b>APIs</b> (Application Programming Interfaces).
+                                  Which are public datasets from the <i>U.S. Bureau of Labor Statistics </i> (BLS) by utilizing a custom built <b><span style="color: #FF4E61;"> Streamlit </span></b> connection 🔌 and being able to query {search_icon} the dataset(s) and save them as <a href="https://pandas.pydata.org/" target="_blank">pandas</a> dataframe(s). This is a more user-friendly approach versus original Python code from BLS, 
+                                  found at <a href="https://www.bls.gov/developers/api_python.htm#python2" target="_blank">www.bls.gov</a>.''', my_text_align = 'justify')
+            
+                vertical_spacer(2)
+                my_text_paragraph('<b>Example Streamlit API: </b>', my_font_family = 'Ysabeau SC', add_border=True, my_font_weight=400)
+                
+                # Show codeblock in Streamlit
+                st.code('''
+                        # Step 0: install the package
+                        pip install streamlit_bls_connection
+                        ''', language='python')
+                
+                # define codeblock
+                code = '''
+                        import streamlit as st
+                        from bls_connection import BLSConnection
+                                    
+                        # Step 1: Setup connection to US Bureau of Labor Statistics
+                        connection = BLSConnection("bls_connection") 
+                        
+                        # Step 2: Define Input parameters for the API call
+                        # Tip: one or multiple Series ID's* can be retrieved
+                        seriesids_list = ['APU000074714', 'APU000072610']
+                        start_year_str = '2014' # start of date range
+                        end_year_str = '2023'   # end of date range
+                        
+                        # Step 3: Fetch data using the custom connection
+                        dataframes_dict = connection.query(seriesids_list,
+                                                           start_year_str, 
+                                                           end_year_str)   
+                        
+                        # Step 4: Create dataframes
+                        gas_df = dataframes_dict['APU000074714']
+                        electricity_df = dataframes_dict['APU000072610']
+                        
+                        # Step 5: Show Dataframes in Streamlit
+                        st.dataframe(gas_df, electricity_df)'''
+
+                # Show codeblock in Streamlit
+                st.code(code, language='python')
+                
+                # show note to user in Streamlit
+                my_text_paragraph('''*Series ID's can be retrieved from the <a href="https://beta.bls.gov/dataQuery/search" target="_blank">U.S. Bureau of Labor Statistics</a>''', my_font_size = '16px')
+
+                col1, col2, col3 = st.columns([1, 2, 1])
+                with col2:
+                   st.image('./images/streamlit-logo-secondary-colormark-darktext.png')
 if __name__ == "__main__":
     main()

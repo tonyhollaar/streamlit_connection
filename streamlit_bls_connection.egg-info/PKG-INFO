@@ -1,0 +1,6 @@
+Metadata-Version: 2.1
+Name: streamlit-bls-connection
+Version: 0.1
+Summary: A package to fetch Bureau of Labor Statistics data using Streamlit
+Author: Tony Hollaar
+Author-email: thollaar@gmail.com
