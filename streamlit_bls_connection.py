@@ -13,63 +13,114 @@ import json
 class BLSConnection(ExperimentalBaseConnection):
     def __init__(self, connection_name, **kwargs):
         super().__init__(connection_name=connection_name, **kwargs)
-        # Load any connection-specific configuration or credentials here if needed.
-
+        
     def _connect(self, **kwargs):
         # Implement the connection setup here.
         # We don't need to explicitly set up a connection in this case,
         # as we'll be making direct API calls in the methods below.
         pass
 
-    def fetch_data(self, seriesids, start_year, end_year):
+    def fetch_data(self, seriesids, start_year, end_year, api_key=None, **kwargs):
         dataframes_dict = {}
-        headers = {'Content-type': 'application/json'}
+        headers = {
+            'Content-type': 'application/json',
+        }
+    
+        # Build the payload with required parameters
+        payload = {
+            "seriesid": seriesids,
+            "startyear": start_year,
+            "endyear": end_year,
+            "registrationkey": api_key
+        }
+    
+        # Update the payload with additional parameters from **kwargs
+        payload.update(kwargs)
+    
+        # Make the API request using the POST method with the payload
+        p = requests.post('https://api.bls.gov/publicAPI/v2/timeseries/data/', json=payload, headers=headers)
+        json_data = json.loads(p.text)
         
-        # iterate over one or more timeseries
-        for series_id in seriesids:
-            # create empty list to save data for the current seriesId
+        # Iterate over the JSON response and extract data for each series
+        for series in json_data['Results']['series']:
+            series_id = series['seriesID']
             parsed_data = []
-            # set the variable to retrieve from the public dataset
-            data = json.dumps({"seriesid": [series_id], "startyear": start_year, "endyear": end_year})
-            p = requests.post('https://api.bls.gov/publicAPI/v2/timeseries/data/', data=data, headers=headers)
-            json_data = json.loads(p.text)
     
-            # iterate over the json file
-            for series in json_data['Results']['series']:
-                # iterate over the list of lists that contains the data
-                for item in series['data']:
-                    # within each list retrieve the year, period, value and footnotes
-                    year = item['year']
-                    period = item['period']
-                    value = item['value']
-                    footnotes = ""
-                    for footnote in item['footnotes']:
-                        if footnote:
-                            footnotes = footnotes + footnote['text'] + ','
-                    parsed_data.append([series_id, year, period, value, footnotes[0:-1]])
+            # Extract catalog data for the current series if available
+            series_title = series.get('catalog', {}).get('series_title')
+            survey_name = series.get('catalog', {}).get('survey_name')
     
-            df = pd.DataFrame(parsed_data, columns=['seriesID', 'year', 'period', 'value', 'footnotes'])
+            for item in series['data']:
+                year = item['year']
+                period = item['period']
+                value = item['value']
+                footnotes = ",".join(footnote['text'] for footnote in item['footnotes'] if footnote)
+    
+                # Create a dictionary with the common data fields
+                row_data = {
+                    'seriesID': series_id,
+                    'year': year,
+                    'period': period,
+                    'value': value,
+                    'footnotes': footnotes,
+                    'series_title': series_title,
+                    'survey_name': survey_name,
+                    'catalog': series.get('catalog'),
+                    'calculations': item.get('calculations'),
+                    'annualaverage': item.get('annualaverage'),
+                    'aspects': item.get('aspects')
+                }
+    
+                parsed_data.append(row_data)
+    
+            # Create DataFrame for the current series
+            columns = ['seriesID', 'series_title', 'survey_name', 'year', 'period', 'value', 'catalog', 'calculations', 'annualaverage', 'aspects', 'footnotes']
+            data = [[entry.get(i, None) for i in columns] for entry in parsed_data]
+            df = pd.DataFrame(data, columns=columns)
+    
             df['value'] = pd.to_numeric(df['value'])
             df['month'] = pd.to_numeric(df['period'].replace({'M': ''}, regex=True))
-            df['date'] = df['month'].map(str) + '-' + df['year'].map(str)
-            df['date'] = pd.to_datetime(pd.to_datetime(df['date'], format='%m-%Y').dt.strftime('%m-%Y'))
+            df['date'] = pd.to_datetime(df['month'].map(str) + '-' + df['year'].map(str), format='%m-%Y')
             df = df.sort_values(by='date', ascending=True)
-            df['perct_change_value'] = df['value'].pct_change()
+            df['%_change_value'] = df['value'].pct_change()
     
-            # add the dataframe to the dictionary with the seriesid as the key
+            # Reorder the columns in the DataFrame
+            df = df[['date', 'value', '%_change_value', 'seriesID', 'series_title', 'year', 'month', 'period', 'survey_name', 'catalog', 'calculations', 'annualaverage', 'aspects', 'footnotes']]
+    
+            # Reset the index to start from 0
+            df.reset_index(drop=True, inplace=True)
+    
+            # Replace empty strings with NaN
+            df.replace('', pd.NA, inplace=True)
+            
+            # Drop columns where all values are either NaN or pd.NA
+            df = df.dropna(axis=1, how='all')
+    
+            # Add the DataFrame to the dictionary with the seriesid as the key
             dataframes_dict[series_id] = df
+    
         return dataframes_dict
     
-    @staticmethod
+    @classmethod
     @st.cache_data(ttl="1d")  # Cache the data for one day (24 hours)
-    def query(series_id, start_year, end_year):
-        # This method will be called by the Streamlit app to retrieve data using the custom connection.
-        # You can implement any caching logic or other data processing here.
-        connection = BLSConnection("bls_connection")
+    #def query(cls, seriesids, start_year, end_year, catalog=False, calculations=False, annualaverage=False, aspects=False, api_key=None):
+    def query(cls, seriesids, start_year, end_year, api_key=None, **kwargs):
         try:
-            return connection.fetch_data(series_id, start_year, end_year)
+            # This method will be called by the Streamlit app to retrieve data using the custom connection.
+            # You can implement any caching logic or other data processing here.
+            connection = cls("bls_connection")
+        
+            # Fetch data using the custom connection
+            dataframes_dict = connection.fetch_data(
+                seriesids=seriesids,
+                start_year=start_year,
+                end_year=end_year,
+                api_key=api_key,  # Pass the api_key to the fetch_data method
+                **kwargs          # Pass any additional keyword arguments to fetch_data
+            )
+            return dataframes_dict
         except KeyError:
             with st.sidebar:
-                st.error("😒 **Error**: Failed to fetch latest data. Daily query limit is exceeded, retrieving stored data from backup source.")
-           #st.stop()  # Stop the app execution and display the error message to the user
+                st.error("😒 **Error**: Failed to fetch latest data. Daily query limit is exceeded.")
             return None
+

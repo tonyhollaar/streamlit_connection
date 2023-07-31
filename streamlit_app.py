@@ -16,7 +16,7 @@ data source: https://data.bls.gov/timeseries/APU000074714
 import streamlit as st
 import pandas as pd
 from datetime import datetime
-from streamlit_connection_package.bls_connection import BLSConnection
+from streamlit_bls_connection import BLSConnection
 import plotly.express as px
 import plotly.graph_objects as go
 from streamlit_lottie import st_lottie
@@ -173,16 +173,24 @@ def create_flipcard_gasoline(image_path_front_card=None, font_size_back='10px', 
                 <h2>Instructions</h2>
                 <p>
                     <br>
-                    <b>Step 1:</b> Select your date range for retrieving historical U.S. gas prices*
+                    <b>step 1:</b> Select your <b>date range</b> for retrieving historical U.S. gas prices*
                     <br>
-                    <b>Step 2:</b> Choose a metric for assessment (Gallons/Liters).
+                    <b>step 2:</b> Choose a <b>metric</b> for assessment i.e. <i>gallons</i> or <i>liters</i>
                     <br>
-                    <b>Step 3:</b> Enter your vehicle's Fuel Tank Size (Gallons).
+                    <b>step 3:</b> Select a <b>type of fuel</b>: <i>regular, midgrade, premium, diesel</i>
                     <br>
-                    <b>Step 4:</b> Press the <b>"Submit"</b> button from the sidebar.
+                    <b>step 4:</b> Enter <b>Fuel Tank Size</b> in <i>gal/L</i>
+                    <br>
+                    <b>step 5:</b> Enter amount of fuel used per year in <i>gal/L</i>
+                    <br>
+                    <b>step 6:</b> Enter Battery Size</b> (in kwh)
+                    <br>
+                    <b>step 7:</b> <b>[optional]</b> Enter your <b>api key</b> from BLS*
+                    <br>
+                    <b>step 8:</b> Press the <b>"Submit"</b> button from the sidebar
                 </p>
                 <footer style="font-size: 14px;">
-                    *Data retrieved using the API of U.S. Bureau of Labor Statistics.
+                    *Data retrieved from the U.S. Bureau of Labor Statistics
                 </footer>
             </div>
         </div>
@@ -243,7 +251,7 @@ def create_flipcard_gasoline(image_path_front_card=None, font_size_back='10px', 
               overflow: auto;
             }}
         .back h2 {{
-          margin-bottom: 20px;
+          margin-bottom: 0px;
           margin-top: 0px;
         }}
         .flashcard:hover .front {{
@@ -253,7 +261,7 @@ def create_flipcard_gasoline(image_path_front_card=None, font_size_back='10px', 
           transform: rotateY(0deg);
         }}
         .back p {{
-          margin: 10px 0;
+          margin: -10px 0;
           font-size: {font_size_back};
         }}
         footer {{
@@ -286,86 +294,124 @@ def plot_gas_price(df, key=0, my_chart_color='#00008B'):
     my_text_paragraph('<b>U.S. Gas Price Per Gallon</b>')
     my_text_paragraph(' Month-over-Month % Change', my_font_size='14px')
 
-    # Create a copy of the DataFrame to avoid modifying the original data
-    data_df = df.copy()
-
-    # Create plotly line graph object
+    # Create an empty Plotly figure with layout
     fig = go.Figure()
 
-    fig.add_trace(go.Scatter(x=data_df["date"], y=data_df["perct_change_value"], line=dict(color=my_chart_color, width=2, dash='solid')))
-
-    # Customize the layout
-    fig.update_layout(
-        width=800,
-        height=400,
-        xaxis=dict(title='Date'),
-        yaxis=dict(title='', tickformat='.2%'),  # Change tickformat to 'd' for integers
-        legend=dict(x=0.9, y=0.9),
-        plot_bgcolor='rgba(0,0,0,0)',  # Set the background to transparent
-    )
-
-    # Set labels for x and y axis
-    fig.update_layout(
-        title = '',
-        title_x = 0.5,
-        xaxis_title = "Date",
-        title_font = dict(size=15),
-        yaxis_title = "Month-over-Month %Δ",
-        width = 800,
-        height = 600,
-        template = 'plotly',
-        plot_bgcolor='rgba(0,0,0,0)',  # Set the background to transparent
-        xaxis=dict(
-            showline=True,
-            showgrid=True,
-            linecolor='black',
-            linewidth=0.5,
-            tickfont=dict(size=14, family='Arial'),
-            ticks="outside",
-            ticklabelmode="period",
-            tickcolor="black",
-            rangemode="tozero",
-            gridcolor='whitesmoke'
-        ),
-        yaxis=dict(
-            ticks="outside",
-            ticklabelmode="period",
-            linecolor='black',
-            linewidth=0.5,
-            tickcolor="black",
-            rangemode="tozero",
-            gridcolor='whitesmoke',
+    # Check if DataFrame is None or empty
+    if df is None or df.empty:
+        fig.update_layout(
+            width=800,
+            height=400,
+            xaxis=dict(title='Date'),
+            yaxis=dict(title='', tickformat='.2%'),  # Change tickformat to 'd' for integers
+            legend=dict(x=0.9, y=0.9),
+            plot_bgcolor='rgba(0,0,0,0)',  # Set the background to transparent
         )
-    )
 
-    # Add the range slider to the layout
-    fig.update_layout(
-        xaxis=dict(
-            rangeselector=dict(
-                buttons=list([
-                    dict(count=1, label='1m', step='month', stepmode='backward'),
-                    dict(count=6, label='6m', step='month', stepmode='backward'),
-                    dict(count=1, label='YTD', step='year', stepmode='todate'),
-                    dict(count=1, label='1y', step='year', stepmode='backward'),
-                    dict(step='all')
-                ]),
-                x=0.35,
-                y=1.2,
-                yanchor='auto',  # top
-                font=dict(size=10),
-            ),
-            rangeslider=dict(  # bgcolor='45B8AC',
-                visible=True,
-                range=[data_df["date"].min(), data_df["date"].max()]  # Set range of slider based on data
-            ),
-            type='date'
+        # Add the range slider to the layout
+        fig.update_layout(
+            xaxis=dict(
+                rangeselector=dict(
+                    buttons=list([
+                        dict(count=1, label='1m', step='month', stepmode='backward'),
+                        dict(count=6, label='6m', step='month', stepmode='backward'),
+                        dict(count=1, label='YTD', step='year', stepmode='todate'),
+                        dict(count=1, label='1y', step='year', stepmode='backward'),
+                        dict(step='all')
+                    ]),
+                    x=0.35,
+                    y=1.2,
+                    yanchor='auto',  # top
+                    font=dict(size=10),
+                ),
+                rangeslider=dict(
+                    visible=True,
+                    range=["2022-01-01", "2022-12-31"],  # Set default range for slider
+                ),
+                type='date'
+            )
         )
-    )
-    # Set the line color to a lighter blue and legend name
-    fig.update_traces(line_color='#1E90FF', showlegend=True, name="Gas Price %Δ")
 
-    # Set the legend position and remove legend title
-    fig.update_layout(legend=dict(x=0.9, y=0.9, title=""))
+    else:
+        # Create a copy of the DataFrame to avoid modifying the original data
+        data_df = df.copy()
+
+        # Create plotly line graph object
+        fig.add_trace(go.Scatter(x=data_df["date"], y=data_df["%_change_value"], line=dict(color=my_chart_color, width=2, dash='solid')))
+
+        # Customize the layout for non-empty DataFrame
+        fig.update_layout(
+            width=800,
+            height=400,
+            xaxis=dict(title='Date'),
+            yaxis=dict(title='', tickformat='.2%'),  # Change tickformat to 'd' for integers
+            legend=dict(x=0.9, y=0.9),
+            plot_bgcolor='rgba(0,0,0,0)',  # Set the background to transparent
+        )
+
+        # Set labels for x and y axis
+        fig.update_layout(
+            title='',
+            title_x=0.5,
+            xaxis_title="Date",
+            title_font=dict(size=15),
+            yaxis_title="Month-over-Month %Δ",
+            width=800,
+            height=600,
+            template='plotly',
+            plot_bgcolor='rgba(0,0,0,0)',  # Set the background to transparent
+            xaxis=dict(
+                showline=True,
+                showgrid=True,
+                linecolor='black',
+                linewidth=0.5,
+                tickfont=dict(size=14, family='Arial'),
+                ticks="outside",
+                ticklabelmode="period",
+                tickcolor="black",
+                rangemode="tozero",
+                gridcolor='whitesmoke'
+            ),
+            yaxis=dict(
+                ticks="outside",
+                ticklabelmode="period",
+                linecolor='black',
+                linewidth=0.5,
+                tickcolor="black",
+                rangemode="tozero",
+                gridcolor='whitesmoke',
+            )
+        )
+
+        # Add the range slider to the layout
+        fig.update_layout(
+            xaxis=dict(
+                rangeselector=dict(
+                    buttons=list([
+                        dict(count=1, label='1m', step='month', stepmode='backward'),
+                        dict(count=6, label='6m', step='month', stepmode='backward'),
+                        dict(count=1, label='YTD', step='year', stepmode='todate'),
+                        dict(count=1, label='1y', step='year', stepmode='backward'),
+                        dict(step='all')
+                    ]),
+                    x=0.35,
+                    y=1.2,
+                    yanchor='auto',  # top
+                    font=dict(size=10),
+                ),
+                rangeslider=dict(
+                    visible=True,
+                    range=[data_df["date"].min(), data_df["date"].max()],  # Set range of slider based on data
+                ),
+                type='date'
+            )
+        )
+        # Set the line color to a lighter blue and legend name
+        fig.update_traces(line_color='#1E90FF', showlegend=True, name="Gas Price %Δ")
+
+        # Set the legend position and remove legend title
+        fig.update_layout(legend=dict(x=0.9, y=0.9, title=""))
+
     return fig
 
 def create_gas_price_line_graph(df):
@@ -383,11 +429,19 @@ def create_gas_price_line_graph(df):
         The Plotly line graph object.
 
     """
-    my_text_paragraph('<b> U.S. Gas Price Per Gallon</b>')
-    my_text_paragraph(' Month-over-Month', my_font_size='14px')
-    
-    # Create plotly line graph object
-    fig = px.line(data_frame=df, x="date", y="value")
+    # Create an empty plotly line graph object if the DataFrame is empty or None
+    if df is None or df.empty:
+        my_text_paragraph('<b> U.S. Gas Price Per Gallon</b>')
+        my_text_paragraph(' Month-over-Month', my_font_size='14px')
+        
+        fig = go.Figure()
+    else:
+        my_text_paragraph('<b> U.S. Gas Price Per Gallon</b>')
+        my_text_paragraph(' Month-over-Month', my_font_size='14px')
+        
+        # Create plotly line graph object
+        fig = go.Figure()
+        fig.add_trace(go.Scatter(x=df["date"], y=df["value"], mode="lines", line_color='cornflowerblue', name="Gas Price ($)"))
 
     # Customize the layout
     fig.update_layout(
@@ -423,10 +477,68 @@ def create_gas_price_line_graph(df):
         )
     )
 
-    # Set the line color and legend name
-    fig.update_traces(line_color='cornflowerblue', showlegend=True, name="Gas Price ($)")
-
     return fig
+
+def my_bubbles(my_string, my_background_color="#2CB8A1"):
+    gradient = f"-webkit-linear-gradient(45deg, {my_background_color}, #2CB8A1, #0072B2)"
+    text_style = f"text-align: center; font-family: Segoe UI, Tahoma, Geneva, Verdana, sans-serif; font-weight: 200; font-size: 36px; line-height: 1.5; -webkit-background-clip: text; -webkit-text-fill-color: black; padding: 20px; position: relative;"
+    st.markdown(f'''
+        <div style="position: relative;">
+            <div style="position: absolute; top: 0; left: 0; right: 0; bottom: 0; z-index: -1; opacity: 0.2;"></div>
+            <h1 style="{text_style}">
+                <center>{my_string}</center>
+                <div style="position: absolute; top: -30px; left: 80px;">
+                    <div style="background-color: #0072B2; width: 8px; height: 8px; border-radius: 50%; animation: bubble 7s infinite;"></div>
+                </div>
+                <div style="position: absolute; top: -20px; right: 100px;">
+                    <div style="background-color: #FF0000; width: 14px; height: 14px; border-radius: 50%; animation: bubble 4s infinite;"></div>
+                </div>
+                <div style="position: absolute; top: 10px; right: 50px;">
+                    <div style="background-color: #0072B2; width: 8px; height: 8px; border-radius: 50%; animation: bubble 5s infinite;"></div>
+                </div>
+                <div style="position: absolute; top: -20px; left: 60px;">
+                    <div style="background-color: #88466D; width: 8px; height: 8px; border-radius: 50%; animation: bubble 6s infinite;"></div>
+                </div>
+                <div style="position: absolute; top: 0px; left: -10px;">
+                    <div style="background-color: #2CB8A1; width: 12px; height: 12px; border-radius: 50%; animation: bubble 7s infinite;"></div>
+                </div>
+                <div style="position: absolute; top: 10px; right: -20px;">
+                    <div style="background-color: #7B52AB; width: 10px; height: 10px; border-radius: 50%; animation: bubble 10s infinite;"></div>
+                </div>
+                <div style="position: absolute; top: -20px; left: 150px;">
+                    <div style="background-color: #FF9F00; width: 8px; height: 8px; border-radius: 50%; animation: bubble 20s infinite;"></div>
+                </div>
+                <div style="position: absolute; top: 25px; right: 170px;">
+                    <div style="background-color: #FF6F61; width: 12px; height: 12px; border-radius: 50%; animation: bubble 4s infinite;"></div>
+                </div>
+                <div style="position: absolute; top: -30px; right: 120px;">
+                <div style="background-color: #440154; width: 10px; height: 10px; border-radius: 50%; animation: bubble 5s infinite;"></div>
+                </div>
+                <div style="position: absolute; top: -20px; left: 150px;">
+                <div style="background-color: #2CB8A1; width: 8px; height: 8px; border-radius: 50%; animation: bubble 6s infinite;"></div>
+                </div>
+                <div style="position: absolute; top: -10px; right: 20px;">
+                <div style="background-color: #FFC300; width: 12px; height: 12px; border-radius: 50%; animation: bubble 7s infinite;"></div>
+                </div>
+                </h1>
+                <style>
+                @keyframes bubble {{
+                0% {{
+                transform: translateY(0);
+                }}
+                50% {{
+                transform: translateY(+50px);
+                }}
+                100% {{
+                transform: translateY(0);
+                }}
+                }}
+                .bubble-container div {{
+                margin: 10px;
+                }}
+                </style>
+                </div>
+                ''', unsafe_allow_html=True)
 
 def social_media_links(margin_before = 0):
     vertical_spacer(margin_before)
@@ -520,8 +632,8 @@ def main():
             with st.sidebar.form("user_form"):
                 my_text_paragraph('User Settings')
                 
-                start_year, end_year = st.select_slider(label = "Select Year Range", options = list(range(2014, 2024)), value = (2014, 2023))  # Default range of years
-                metric = st.radio(label = "Select Metric:", options = ["Gallons", "Liters"], index = 0, horizontal = False) # Default selection is "Gallons"
+                start_year, end_year = st.select_slider(label = "📆 Select Year Range", options = list(range(2014, 2024)), value = (2014, 2023))  # Default range of years
+                metric = st.radio(label = "📐 Select Metric:", options = ["Gallons", "Liters"], index = 0, horizontal = False) # Default selection is "Gallons"
                 
                 my_metric = 'Gallon' if metric == 'Gallons' else 'Liter'
                 
@@ -532,16 +644,27 @@ def main():
                     fuel_tank_size_value = (14*3.785411784)
                     fuel_per_year = (489.00 * 3.785411784)
                     
-                gas_type = st.radio(label = "Select Type:", options = ["Regular", "Midgrade", "Premium", "Diesel"], index = 0, horizontal = False) # Default selection is "Gallons"
-                fuel_tank_size = st.number_input(f'Enter the Fuel Tank Size (in {my_metric}s)', min_value = 1.0, max_value = 100.0, value = float(fuel_tank_size_value), step = 1.0)
-                usage_per_year = st.number_input(label = f'Enter amount used per year (in {my_metric}s)', min_value = 1.0, value = float(fuel_per_year), step = 1.0)
+                gas_type = st.radio(label = "⛽ Select Type:", options = ["Regular", "Midgrade", "Premium", "Diesel"], index = 0, horizontal = False) # Default selection is "Gallons"
+                fuel_tank_size = st.number_input(f'🕳️ Enter the Fuel Tank Size :green[(in {my_metric}s)]', min_value = 1.0, max_value = 100.0, value = float(fuel_tank_size_value), step = 1.0)
+                usage_per_year = st.number_input(label = f'🛢️ Enter amount used per year :green[(in {my_metric}s)]', min_value = 1.0, value = float(fuel_per_year), step = 1.0)
                 
                 # electricity
-                battery_capacity = st.number_input('Enter the Battery Usable Capacity (in KWH)', min_value = 1, value = 81  , step = 1)
+                battery_capacity = st.number_input('🔋 Enter the Battery Usable Capacity :green[(in KWH)]', min_value = 1, value = 81  , step = 1)
+                
+                # Create the Streamlit form to take the API key as input from the user
+                api_key_input = st.text_input("🔑 **[OPTIONAL]** Enter API Key :green[(U.S. Bureau of Labor Statistics)]", 
+                                              value = '', 
+                                              help = '''This is :green[**not required**] to retrieve data! 
+                                                  However, with an API key you can:  
+                                                  - execute up to 500 **queries** per day versus 25 **queries** per day  
+                                                  - obtain additional **metadata** such as *series_title*  
+                                                  To obtain an API Key, register at https://data.bls.gov/registrationEngine/''')
+                
+                # Create submit button for form
                 submit_button = st.form_submit_button(label="Submit", use_container_width = True)
             
             # Show Social Media links    
-            social_media_links(margin_before = 4)
+            social_media_links(margin_before = 0)
            
         # If user presses Submit button, run code
         if submit_button:
@@ -551,19 +674,22 @@ def main():
                     my_text_paragraph(f'{gas_type.lower()} unleaded in {my_metric.lower()}s')
                 elif gas_type == 'Diesel':
                     my_text_header('Diesel', my_font_size='54px')
-                    my_text_paragraph(f'(in {my_metric.lower()}s)')
+                    my_text_paragraph(f'in {my_metric.lower()}s')
                     
                 # =============================================================================
-                # Step 1: Create the custom BLSConnection with a connection_name
+                # Step 1: Create Connection object with U.S. Bureau of Labor Statistics API
                 # =============================================================================
-                connection = BLSConnection("bls_connection")
+                conn = st.experimental_connection('bls', type=BLSConnection)
     
                 # =============================================================================
                 # Step 2: Input parameters for the API call
                 # =============================================================================
-                # two timeseries are called from the API:
-                # APU000074714 -> Gasoline, unleaded regular, per gallon/3.785 liters in U.S. city average, average price, not seasonally adjusted, source: https://data.bls.gov/timeseries/APU000074714
-                # APU000072610 -> Electricity per KWH in U.S. city average, average price, not seasonally adjusted #source: https://beta.bls.gov/dataViewer/view/timeseries/APU000072610
+                # 5 different timeseries are called from the API:
+                # - APU000074714 -> Gasoline, unleaded regular, per gallon/3.785 liters in U.S. city average, average price, not seasonally adjusted, source: https://data.bls.gov/timeseries/APU000074714
+                # - APU000074715
+                # - APU000074716
+                # - APU000072610
+                # - APU000072610 -> Electricity per KWH in U.S. city average, average price, not seasonally adjusted #source: https://beta.bls.gov/dataViewer/view/timeseries/APU000072610
                 seriesids_list = ['APU000074714', 'APU000074715', 'APU000074716', 'APU000074717', 'APU000072610']
                 start_year_str = str(start_year)
                 end_year_str = str(end_year)
@@ -571,9 +697,33 @@ def main():
                 # =============================================================================
                 # Step 3: Fetch data using the custom connection
                 # =============================================================================
+                # Get the API key from Streamlit secrets
+                api_key_secrets = st.secrets["connections_bls"]["api_key"]
+                
+                # Check if the user has provided an API key through the form
+                if api_key_input:
+                    api_key = api_key_input
+                    st.toast('Your API Key was used from the sidebar...', icon='😍')
+                elif api_key_secrets:
+                    api_key = api_key_secrets
+                    st.toast('Your API Key was found in secrets.toml file!', icon='😍')
+                else:
+                    api_key = None
+                    st.toast('No API Key was provided, no worries!', icon='😇')
+                
+                # Create the BLSConnection object with the updated API key
+                conn = st.experimental_connection('bls', type=BLSConnection)
+                
                 # retrieve a dictionary of dataframe(s) e.g. if multiple data id's are provided, which can be individually retrieved per dataset from https://www.bls.gov/developers/home.htm
-                dataframes_dict = connection.query(seriesids_list, start_year_str, end_year_str)
+                # Call the query method on the connection object
+                dataframes_dict = conn.query(seriesids_list, start_year_str, end_year_str, api_key=api_key, catalog=True, calculations=True, annualaverage=True, aspects=True)
+                #dataframes_dict = conn.query(seriesids_list, start_year_str, end_year_str, api_key=None) # TEST
     
+                # [OPTIONAL] Retrieve the API key from Streamlit secrets -> not needed but higher amount of daily queries allowed e.g. 500 versus 25                
+                # register at https://data.bls.gov/registrationEngine/ to obtain your API key and put it in .streamlit/secrets.toml file
+                # [connections.bls]
+                # api_key = "XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX"
+
                 try:     
                     # Assign individual dataframes to named variables using tuple unpacking
                     gas_type_dict = {'regular': 'APU000074714', 'midgrade': 'APU000074715', 'premium': 'APU000074716', 'diesel': 'APU000074717'}
@@ -593,7 +743,7 @@ def main():
                         
                     if gas_df is None or electricity_df is None:
                         st.info('connection with API to bls.gov could not be established, backup method initiated to retrieve data from .CSV')
-                        
+
                     else:
                         st.error('Error: the dataset could not be retrieved via API nor a backup copy')
                     
@@ -610,7 +760,7 @@ def main():
                 my_text_paragraph(my_string = f'latest data as of {formatted_date}', my_font_size='12px')
                 
                 latest_value = gas_df[f'Price per {my_metric} ($)'].iloc[-1]  # Get the latest value
-                delta = gas_df['perct_change_value'].iloc[-1]                 # Get the delta
+                delta = gas_df['%_change_value'].iloc[-1]                 # Get the delta
                 
                 # Show title/caption centered on page
                 col1, col2, col3, col4, col5, col6, col7 = st.columns([14, 48, 1, 36, 1, 48, 12])
@@ -622,13 +772,12 @@ def main():
                     # per year 489 gallons #source: https://www.api.org/news-policy-and-issues/blog/2022/05/26/top-numbers-driving-americas-gasoline-demand
                     st.metric(label = 'Estimated Yearly Cost', value = f"${usage_per_year*latest_value:.2f}",  delta= f"${delta*usage_per_year*latest_value:.2f}", label_visibility = 'visible',  delta_color="inverse", help = f'The total estimated cost is calculated based on a consumption of {int(usage_per_year)} {metric.lower()}, which represents the average usage per registered vehicle in the United States.')
                 
-                
                 # =============================================================================
                 # Electricity  Metrics           
                 # =============================================================================
                 st.markdown('---')
                 latest_value_electricity = electricity_df['value'].iloc[-1]  # Get the latest value
-                delta = electricity_df['perct_change_value'].iloc[-1]  # Get the delta
+                delta = electricity_df['%_change_value'].iloc[-1]  # Get the delta
                 
                 my_text_header('Electricity', my_font_size = '48px', my_font_family = 'Orbitron')
                 my_text_paragraph('average electricity price, per kWh')
@@ -646,27 +795,33 @@ def main():
         # if user did not press submit button on dashboard tab
         else:
             # Show Cover Image
-            create_flipcard_gasoline(image_path_front_card ='./images/COVER_GASOLINE.PNG', font_size_back='18px')
-            
+            create_flipcard_gasoline(image_path_front_card ='./images/COVER_GASOLINE.PNG', font_size_back='16px')
+    
+    # PLOTS            
     with tab2:
         with st.expander('', expanded = True):
             # =============================================================================
             # Display the graph in Streamlit app
             # =============================================================================            
             # Absolute Values plot
-            if gas_df is not None and not gas_df.empty:
-                st.plotly_chart(create_gas_price_line_graph(gas_df), use_container_width = True)
-            
-                st.markdown('---')
-                # Month over Month % Change plot
-                st.plotly_chart(plot_gas_price(gas_df), use_container_width = True)
+            #if gas_df is not None and not gas_df.empty:
+            st.plotly_chart(create_gas_price_line_graph(gas_df), use_container_width = True)
+        
+            st.markdown('---')
+            # Month over Month % Change plot
+            st.plotly_chart(plot_gas_price(gas_df), use_container_width = True)
 
         rounded_image(image_path = './images/oldtimer.png', corner_radius = 5)
+        
     with tab3:
         with st.expander('', expanded = True):
         
-            # header
-            my_text_paragraph('<b>Raw Data - Gasoline</b>')
+            # Set header on page in Streamlit
+            if gas_type != 'Diesel':
+                my_text_paragraph('<b>Raw Data - Gasoline</b>')
+                my_text_paragraph(f'{gas_type.lower()}')
+            elif gas_type == 'Diesel':
+                my_text_paragraph('<b>Raw Data - Diesel</b>')
             
             # Show animation in Streamlit 
             show_lottie_animation(url = './images/animation_lkhk7c4h.json', key = 'oil', width=160, speed = 1, col_sizes = [45,40,40])
@@ -717,7 +872,12 @@ def main():
     with tab4:
         with st.expander('', expanded = True):
             my_text_header('ROUTE 66', my_font_size = '48px', my_font_family = 'Archivo Black')
-
+            
+            # check if data is present then calculate total cost one way trip of route 66 e.g. (2278 miles / fuel efficiency) * latest retrieved price per gallon
+            if latest_value is not None:
+                cost_route66 = round((2278/25.4)*latest_value, 2)
+            else:
+                cost_route66 = ' - '
                 
             col1, col2, col3, col4, col5, col6, col7 = st.columns([1, 6, 1, 6, 1, 6, 1])
             with col2:
@@ -725,11 +885,7 @@ def main():
             with col4:
                 st.metric(label = 'Fuel Efficiency (mpg)', value =  25.4, help = 'Average miles per gallon')
             with col6:
-                if latest_value is not None:
-                    
-                    cost_route66 = round((2278/25.4)*latest_value, 2)
-                
-                    st.metric(label = 'Cost one-way trip', value = f"${cost_route66}", help = 'Estimated cost for one-way trip')
+                st.metric(label = 'Cost one-way trip', value = f"${cost_route66}", help = 'Estimated cost for one-way trip')
             
             # Define the locations and their coordinates along with random population sizes
             locations = {
@@ -831,20 +987,26 @@ def main():
     # ABOUT TAB
     with tab5:
         with st.expander('', expanded = True):
+            my_bubbles(my_string = '')
             my_text_header('Streamlit Connection API', my_font_size = '48px', my_font_family = 'Pacifico')
-            
+                        
             col1, col2, col3 = st.columns([1, 10, 1])
             with col2:
                 vertical_spacer(2)
                 my_text_paragraph(f'''This application is created as part of the <b><span style="color: #FF4E61;"> Streamlit Connections Hackathon 🎉</span></b> <a href="https://discuss.streamlit.io/t/connections-hackathon/47574" target="_blank">contest</a>. 
-                                  The <i>goal</i> of this app is to demonstrate how to easily setup and retrieve data from one of my favorite data <b>APIs</b> (Application Programming Interfaces).
-                                  Which are public datasets from the <i>U.S. Bureau of Labor Statistics </i> (BLS) by utilizing a custom built <b><span style="color: #FF4E61;"> Streamlit </span></b> connection 🔌 and being able to query {search_icon} the dataset(s) and save them as <a href="https://pandas.pydata.org/" target="_blank">pandas</a> dataframe(s). This is a more user-friendly approach versus original Python code from BLS, 
-                                  found at <a href="https://www.bls.gov/developers/api_python.htm#python2" target="_blank">www.bls.gov</a>.''', my_text_align = 'justify')
-            
+                                  The <i>goal</i> of this app is to demonstrate how to easily setup and retrieve data with a Streamlit connection from one of my favorite <b>APIs</b> (Application Programming Interfaces).
+                                  Which is the API from the <i>U.S. Bureau of Labor Statistics </i> (BLS) by utilizing a custom built <b><span style="color: #FF4E61;"> Streamlit </span></b> connection 🔌 and being able to query {search_icon} the dataset(s) and save them as <a href="https://pandas.pydata.org/" target="_blank">pandas</a> dataframe(s). This is a more user-friendly approach versus original Python code from BLS, 
+                                  found at <a href="https://www.bls.gov/developers/api_python.htm#python2" target="_blank">www.bls.gov</a>.
+                                  For more information about the <b><span style="color: #0072b2;">streamlit_bls_connection</span></b> Python package, please refer to the official <a href="https://pypi.org/project/streamlit-bls-connection/" target=_blank">documentation</a>.
+                                  Check out below example to get started if you would like to use it👇!
+                                  ''', my_text_align = 'justify')
+                
+                st.image('./images/socket.png')
                 vertical_spacer(2)
-                my_text_paragraph('<b>Example Streamlit API: </b>', my_font_family = 'Ysabeau SC', add_border=True, my_font_weight=400)
+                my_text_paragraph('<b><span style="color: #0072b2;">example</span></b>', my_font_family = 'Ysabeau SC', add_border=True, my_font_weight=600, my_font_size='22px', border_color = "#0072b2")
                 
                 # Show codeblock in Streamlit
+                my_text_paragraph('''''')
                 st.code('''
                         # Step 0: install the package
                         pip install streamlit_bls_connection
@@ -853,12 +1015,12 @@ def main():
                 # define codeblock
                 code = '''
                         import streamlit as st
-                        from bls_connection import BLSConnection
+                        from streamlit_bls_connection import BLSConnection
                                     
                         # Step 1: Setup connection to US Bureau of Labor Statistics
-                        connection = BLSConnection("bls_connection") 
+                        conn = st.experimental_connection('bls', type=BLSConnection)
                         
-                        # Step 2: Define Input parameters for the API call
+                        # Step 2: Define input parameters
                         # Tip: one or multiple Series ID's* can be retrieved
                         seriesids_list = ['APU000074714', 'APU000072610']
                         start_year_str = '2014' # start of date range
@@ -867,23 +1029,36 @@ def main():
                         # Step 3: Fetch data using the custom connection
                         dataframes_dict = connection.query(seriesids_list,
                                                            start_year_str, 
-                                                           end_year_str)   
+                                                           end_year_str,
+                                                           api_key = None)
                         
                         # Step 4: Create dataframes
                         gas_df = dataframes_dict['APU000074714']
                         electricity_df = dataframes_dict['APU000072610']
                         
                         # Step 5: Show Dataframes in Streamlit
-                        st.dataframe(gas_df, electricity_df)'''
+                        st.dataframe(gas_df)
+                        st.dataframe(electricity_df)
+                        '''
 
                 # Show codeblock in Streamlit
                 st.code(code, language='python')
                 
                 # show note to user in Streamlit
                 my_text_paragraph('''*Series ID's can be retrieved from the <a href="https://beta.bls.gov/dataQuery/search" target="_blank">U.S. Bureau of Labor Statistics</a>''', my_font_size = '16px')
-
+                
+                vertical_spacer(2)      
+                
+                col1, col2, col3 = st.columns([3, 2, 2])
+                with col2:                
+                    st.caption('powered by')                  
                 col1, col2, col3 = st.columns([1, 2, 1])
                 with col2:
-                   st.image('./images/streamlit-logo-secondary-colormark-darktext.png')
+         
+                    st.image('./images/streamlit-logo-secondary-colormark-darktext.png')
+                col1, col2, col3 = st.columns([1, 8, 1])
+                with col2:
+                    st.image('./images/logo_small.svg', use_column_width=True)
+
 if __name__ == "__main__":
     main()

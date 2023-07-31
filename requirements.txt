@@ -1,4 +1,7 @@
 streamlit
+streamlit-bls-connection
 streamlit_extras
+streamlit_lottie
 pandas
 numpy
+plotly
