@@ -1,8 +1,16 @@
 # -*- coding: utf-8 -*-
 """
+                             _                        _       _               
+                            (_)                      | |     | |              
+   __ _  __ _ ___ _ __  _ __ _  ___ _____      ____ _| |_ ___| |__   ___ _ __ 
+  / _` |/ _` / __| '_ \| '__| |/ __/ _ \ \ /\ / / _` | __/ __| '_ \ / _ \ '__|
+ | (_| | (_| \__ \ |_) | |  | | (_|  __/\ V  V / (_| | || (__| | | |  __/ |   
+  \__, |\__,_|___/ .__/|_|  |_|\___\___| \_/\_/ \__,_|\__\___|_| |_|\___|_|   
+   __/ |         | |                                                          
+  |___/          |_|                                                          
+
 Created on Mon Jul 24 15:13:46 2023
-@author: tholl
-data source: https://data.bls.gov/timeseries/APU000074714
+@author: tonyhollaar
 """
 # =============================================================================
 #   _      _____ ____  _____            _____  _____ ______  _____ 
@@ -580,15 +588,6 @@ def convert_df(df):
     # IMPORTANT: Cache the conversion to prevent computation on every rerun
     return df.to_csv().encode('utf-8')
 
-def update_my_metric(metric):
-    if 'my_metric' not in st.session_state:
-        st.session_state['my_metric'] = 'Liter'
-    else:
-        if metric == 'Gallons':
-            st.session_state['my_metric'] = 'Liter'
-        else:
-            st.session_state['my_metric'] = 'Gallon'
-
 def rounded_image(image_path, corner_radius):
     # Load the image as bytes
     with open(image_path, "rb") as img_file:
@@ -614,57 +613,58 @@ def rounded_image(image_path, corner_radius):
     st.markdown(html, unsafe_allow_html=True)
 
 def main():
-    
+    # =============================================================================
     # Define variables
+    # =============================================================================
     gas_df = pd.DataFrame()
     electricity_df = pd.DataFrame()
     latest_value = None
+    metric = None
     
+    # Define user tabs in Streamlit
     tab1, tab2, tab3, tab4, tab5 = st.tabs(['🛡️ Dashboard', '📈 Plots', '🔢 Raw Data', '🛣️ Route66', 'ℹ️ Streamlit Connection API'])
     with tab1:
         with st.sidebar:
-            metric = None
-            
-            # Display logo image in sidebar
-            st.image('./images/gaspricewatcher.PNG')
+            st.image('./images/gaspricewatcher.PNG') #display logo
             
             # Display user form with options to filter data in sidebar
             with st.sidebar.form("user_form"):
                 my_text_paragraph('User Settings')
+                start_year, end_year = st.select_slider(label = "📆 Select Date Range", options = list(range(2014, 2024)), value = (2014, 2023))  # Default range of years
                 
-                start_year, end_year = st.select_slider(label = "📆 Select Year Range", options = list(range(2014, 2024)), value = (2014, 2023))  # Default range of years
-                metric = st.radio(label = "📐 Select Metric:", options = ["Gallons", "Liters"], index = 0, horizontal = False) # Default selection is "Gallons"
+                #metric = st.radio(label = "📐 Select Metrics:", options = ["Gallons", "Liters"], index = 0, horizontal = True) # Default selection is "Gallons"
+                metric = st.radio(label = "📐 Select System of Measurement", options = ["Imperial System", "Metric System"], index = 0, horizontal = True, 
+                                  help="""If you select the **Imperial System**, the units of measurement will be in `gallons` for fuel and `miles` for distance (used in the U.S.).
+                                        Alternatively, if you choose the **Metric System**, the units of measurement will be in `liters` for fuel and `kilometers` for distance (used by most of the world).""")
                 
-                my_metric = 'Gallon' if metric == 'Gallons' else 'Liter'
+                #distance_metric = st.radio(label = "", options = ["Miles", "Kilometers"], index = 0, horizontal = True, label_visibility='collapsed') # Default selection is "Gallons"
                 
-                if metric == 'Gallons':
-                    fuel_tank_size_value = 14.00
-                    fuel_per_year = 489.00
-                else:
-                    fuel_tank_size_value = (14*3.785411784)
-                    fuel_per_year = (489.00 * 3.785411784)
-                    
-                gas_type = st.radio(label = "⛽ Select Type:", options = ["Regular", "Midgrade", "Premium", "Diesel"], index = 0, horizontal = False) # Default selection is "Gallons"
+                fuel_efficiency_metric = "miles per gallon" if metric == "Imperial System" else "kilometers per liter"
+                fuel_efficiency_metric_abbrev = "(MPG)" if metric == "Imperial System" else "(KM/L)"
+                distance_metric = "miles" if metric == "Imperial System" else "km"
+                
+                my_metric = 'Gallon' if metric == 'Imperial System' else 'Liter'
+                fuel_tank_size_value = 14.00 if metric == 'Imperial System' else 14 * 3.785411784
+                fuel_per_year = 489.00 if metric == 'Imperial System' else 489.00 * 3.785411784
+                # miles to km = 1.60934, average miles per gallon = 25.40 (user can adjust), 3.78541 liters per gallon
+                fuel_efficiency_value = 25.40 if metric == 'Imperial System' else 25.40 * (1.60934 / 3.785411784)
+                
+                gas_type = st.radio(label = "⛽ Select Fuel Type", options = ["Regular", "Midgrade", "Premium", "Diesel"], index = 0, horizontal = True) # Default selection is "Gallons"
                 fuel_tank_size = st.number_input(f'🕳️ Enter the Fuel Tank Size :green[(in {my_metric}s)]', min_value = 1.0, max_value = 100.0, value = float(fuel_tank_size_value), step = 1.0)
-                usage_per_year = st.number_input(label = f'🛢️ Enter amount used per year :green[(in {my_metric}s)]', min_value = 1.0, value = float(fuel_per_year), step = 1.0)
-                
-                # electricity
-                battery_capacity = st.number_input('🔋 Enter the Battery Usable Capacity :green[(in KWH)]', min_value = 1, value = 81  , step = 1)
-                
-                # Create the Streamlit form to take the API key as input from the user
-                api_key_input = st.text_input("🔑 **[OPTIONAL]** Enter API Key :green[(U.S. Bureau of Labor Statistics)]", 
-                                              value = '', 
-                                              help = '''This is :green[**not required**] to retrieve data! 
-                                                  However, with an API key you can:  
-                                                  - execute up to 500 **queries** per day versus 25 **queries** per day  
-                                                  - obtain additional **metadata** such as *series_title*  
-                                                  To obtain an API Key, register at https://data.bls.gov/registrationEngine/''')
-                
-                # Create submit button for form
+                usage_per_year = st.number_input(label = f'🛢️ Enter the fuel amount used per year :green[(in {my_metric}s)]', min_value = 1.0, value = float(fuel_per_year), step = 1.0)
+                fuel_efficiency = st.number_input(label = f'🚗 Enter the fuel efficiency in {fuel_efficiency_metric} :green[{fuel_efficiency_metric_abbrev}]', min_value = 1.0, value = fuel_efficiency_value, step = 1.0)
+                st.markdown('---')
+                battery_capacity = st.number_input('🔋 Enter the Battery Usable Capacity :green[(in KWH)]', min_value = 1, value = 81, step = 1)
+                miles_per_gallon_equivalent = st.number_input('🚙 Enter the MPGe of your electric vehicle', min_value = 1, value = 97, step = 1)
+                st.markdown('---')
+                api_key_input = st.text_input("🔑 **[OPTIONAL]** Enter API Key :green[(U.S. Bureau of Labor Statistics)]", value = '', help = '''This is :green[**not required**] to retrieve data! 
+                                                                                                                                                  However, with an API key you can:  
+                                                                                                                                                  - execute up to 500 **queries** per day versus 25 **queries** per day  
+                                                                                                                                                  - obtain additional **metadata** such as: *series_title*, *survey_name*, *catalog*  
+                                                                                                                                                  To obtain an API Key, register at https://data.bls.gov/registrationEngine/''')
                 submit_button = st.form_submit_button(label="Submit", use_container_width = True)
             
-            # Show Social Media links    
-            social_media_links(margin_before = 0)
+            social_media_links(margin_before = 0) #Show Social Media links    
            
         # If user presses Submit button, run code
         if submit_button:
@@ -703,7 +703,7 @@ def main():
                 # Check if the user has provided an API key through the form
                 if api_key_input:
                     api_key = api_key_input
-                    st.toast('Your API Key was used from the sidebar...', icon='😍')
+                    st.toast('Your API Key was used from the sidebar!', icon='😍')
                 elif api_key_secrets:
                     api_key = api_key_secrets
                     st.toast('Your API Key was found in secrets.toml file!', icon='😍')
@@ -711,18 +711,17 @@ def main():
                     api_key = None
                     st.toast('No API Key was provided, no worries!', icon='😇')
                 
-                # Create the BLSConnection object with the updated API key
-                conn = st.experimental_connection('bls', type=BLSConnection)
-                
-                # retrieve a dictionary of dataframe(s) e.g. if multiple data id's are provided, which can be individually retrieved per dataset from https://www.bls.gov/developers/home.htm
-                # Call the query method on the connection object
+                # Retrieve a dictionary of dataframe(s) e.g. if multiple data id's are provided
+                # which can be individually retrieved per dataset from https://www.bls.gov/developers/home.htm
                 dataframes_dict = conn.query(seriesids_list, start_year_str, end_year_str, api_key=api_key, catalog=True, calculations=True, annualaverage=True, aspects=True)
                 #dataframes_dict = conn.query(seriesids_list, start_year_str, end_year_str, api_key=None) # TEST
     
+                # =============================================================================
                 # [OPTIONAL] Retrieve the API key from Streamlit secrets -> not needed but higher amount of daily queries allowed e.g. 500 versus 25                
                 # register at https://data.bls.gov/registrationEngine/ to obtain your API key and put it in .streamlit/secrets.toml file
                 # [connections.bls]
                 # api_key = "XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX"
+                # =============================================================================
 
                 try:     
                     # Assign individual dataframes to named variables using tuple unpacking
@@ -745,7 +744,7 @@ def main():
                         st.info('connection with API to bls.gov could not be established, backup method initiated to retrieve data from .CSV')
 
                     else:
-                        st.error('Error: the dataset could not be retrieved via API nor a backup copy')
+                        st.error('Error: the dataset could not be retrieved via API nor a backup copy.')
                     
                 # =============================================================================
                 # Step 4: preprocess gasoline dataframe (gas_df)   
@@ -762,16 +761,27 @@ def main():
                 latest_value = gas_df[f'Price per {my_metric} ($)'].iloc[-1]  # Get the latest value
                 delta = gas_df['%_change_value'].iloc[-1]                 # Get the delta
                 
-                # Show title/caption centered on page
                 col1, col2, col3, col4, col5, col6, col7 = st.columns([14, 48, 1, 36, 1, 48, 12])
                 with col2:
-                    st.metric(label = f'Price per {my_metric}', value = f"${latest_value:.2f}", delta= f"{delta*100:.2f}%", label_visibility = 'visible',  delta_color="inverse", help = f'Gasoline, unleaded regular, per {my_metric.lower()} in U.S. city average, average price, not seasonally adjusted.')
+                    fuel_type_text = f'Gasoline, unleaded {gas_type.lower()}' if gas_type != 'Diesel' else f'Diesel'
+                    st.metric(label = f'Price per {my_metric}', value = f"${latest_value:.2f}", delta= f"{delta*100:.2f}%", label_visibility = 'visible',  delta_color="inverse", help = f'''{fuel_type_text}, per {my_metric.lower()} in U.S. city average, average price, not seasonally adjusted.  Below, you can find the **month-to-month variance** as a percentage change, relative to the previous month's price per gallon.''')
                 with col4:
-                    st.metric(label = 'Full Tank', value = f"${fuel_tank_size*latest_value:.2f}",  delta= f"${delta*fuel_tank_size*latest_value:.2f}", label_visibility = 'visible',  delta_color="inverse", help = 'total cost of fuel for a full tank and month-to-month variance in usd')
+                    st.metric(label = 'Full Tank', value = f"${fuel_tank_size*latest_value:.2f}",  delta= f"${delta*fuel_tank_size*latest_value:.2f}", label_visibility = 'visible',  delta_color="inverse", help = 'total cost of fuel for a full tank and month-to-month variance in usd.')
                 with col6:
                     # per year 489 gallons #source: https://www.api.org/news-policy-and-issues/blog/2022/05/26/top-numbers-driving-americas-gasoline-demand
-                    st.metric(label = 'Estimated Yearly Cost', value = f"${usage_per_year*latest_value:.2f}",  delta= f"${delta*usage_per_year*latest_value:.2f}", label_visibility = 'visible',  delta_color="inverse", help = f'The total estimated cost is calculated based on a consumption of {int(usage_per_year)} {metric.lower()}, which represents the average usage per registered vehicle in the United States.')
-                
+                    st.metric(label = 'Estimated Yearly Cost', value = f"${usage_per_year*latest_value:.2f}",  delta= f"${delta*usage_per_year*latest_value:.2f}", label_visibility = 'visible', delta_color="inverse", help = f'The total estimated yearly cost is calculated based on a consumption of {int(usage_per_year)} {my_metric.lower()}s, with the month-to-month variance shown in USD below.')
+
+                col1, col2, col3, col4, col5, col6, col7 = st.columns([14, 48, 1, 36, 1, 48, 12])
+                with col2:
+                    st.metric(label = f'{fuel_efficiency_metric}', value = f"{fuel_efficiency:,.2f}")
+                with col4:
+                    # Calculate miles (or kilometers) traveled
+                    distance_traveled = fuel_efficiency * fuel_tank_size
+                    st.metric(label = f'Distance in {distance_metric}', value = f"{distance_traveled:,.0f}", help = f'Estimated Distance in {distance_metric} that can be traveled with a full tank.')
+                with col6:
+                    yearly_distance_traveled = fuel_efficiency * usage_per_year
+                    st.metric(label = f'Yearly distance in {distance_metric}', value = f"{yearly_distance_traveled:,.0f}", help = f'''Estimated **yearly distance** in {distance_metric} that can be traveled. **formula:** `{fuel_efficiency} * {usage_per_year}` rounded to nearest whole number.''')
+
                 # =============================================================================
                 # Electricity  Metrics           
                 # =============================================================================
@@ -784,18 +794,36 @@ def main():
                 formatted_date = electricity_df['date'].iloc[-1].strftime('%m-%d-%Y')
                 my_text_paragraph(my_string = f'latest data as of {formatted_date}', my_font_size='12px')
                 
-                col1, col2, col3, col4, col5 = st.columns([16, 12, 1, 12, 10])
+                # convert to km if metric system is selected by user else miles
+                distance_traveled_electric = (battery_capacity * miles_per_gallon_equivalent / 33.7)  if metric == 'Imperial System' else 1.60934*(battery_capacity * miles_per_gallon_equivalent / 33.7)
+                
+                col1, col2, col3, col4, col5, col6, col7 = st.columns([14, 48, 1, 36, 1, 48, 12])
                 with col2:
                     st.metric(label='Price per kWh', value = f"${latest_value_electricity:.2f}", delta= f"{delta*100:.2f}%", label_visibility = 'visible',  delta_color="inverse", help = 'Price in USD of Electricity per Kilowatt-Hour (kWh)')
                 with col4:
-                    st.metric(label = 'Usable Capacity Battery', value = f"${battery_capacity*latest_value_electricity:.2f}",  delta= f"${delta*battery_capacity*latest_value_electricity:.2f}", label_visibility = 'visible',  delta_color="inverse", help = 'Battery capacity in kWh')
-            
-            rounded_image(image_path = "./images/car_headlights.png", corner_radius = 5)
+                    st.metric(label = 'Full Battery', value = f"${battery_capacity*latest_value_electricity:.2f}",  delta= f"${delta*battery_capacity*latest_value_electricity:.2f}", label_visibility = 'visible',  delta_color="inverse", help = 'Usable Battery capacity in kWh')
+                with col6:
+                    # per year 489 gallons #source: https://www.api.org/news-policy-and-issues/blog/2022/05/26/top-numbers-driving-americas-gasoline-demand
+                    st.metric(label = 'Estimated Yearly Cost', value = f"${(yearly_distance_traveled/distance_traveled_electric)*(battery_capacity*latest_value_electricity):.2f}", label_visibility = 'visible', delta_color="inverse", help = f'The total estimated yearly cost is calculated based on a consumption of {int(usage_per_year)} {my_metric.lower()}s, with the month-to-month variance shown in USD below.')
+                
+                col1, col2, col3, col4, col5, col6, col7 = st.columns([14, 48, 1, 36, 1, 48, 12])
+                with col2:
+                    #  one gallon of gas contains the equivalent to 33.7 kWh of electrical power
+                    st.metric(label = f'MPGe', value = f"{miles_per_gallon_equivalent:,.2f}", help = '''miles per gallon of gasoline-equivalent''')
+                with col4:
+                    # distance = (battery capacity in kWh) x (MPGe) / 33.7
+                    
+                    st.metric(label = f'Distance in {distance_metric}', value = f"{distance_traveled_electric:,.0f}", 
+                              help = f'Estimated Distance in {distance_metric} that can be traveled with a full battery charge.\n\nThe formula used for calculation is: distance_traveled_electric = battery_capacity * miles_per_kWh / 33.7.\n\nMiles per kWh (m/kWh) is a measure of how efficient the electric vehicle is in terms of energy consumption. It indicates the number of miles the vehicle can travel on one kilowatt-hour of electricity. The higher the miles per kWh value, the more efficient the vehicle.\n\nThe constant 33.7 is used to convert the miles per kWh value to miles per gallon equivalent (MPGe) for comparison with traditional gasoline-powered vehicles. It represents the energy content of one gallon of gasoline in kilowatt-hours.\n\nPlease note that the actual distance traveled may vary depending on driving conditions, vehicle model, and battery health.')
+                with col6:
+                    yearly_distance_traveled = fuel_efficiency * usage_per_year
+                    st.metric(label = f'Yearly distance in {distance_metric}', value = f"{yearly_distance_traveled:,.0f}", help = f'''Estimated **yearly distance** in {distance_metric} that can be traveled. **formula:** `{fuel_efficiency} * {usage_per_year}` rounded to nearest whole number.''')
+                    
+            rounded_image(image_path = "./images/car_headlights.png", corner_radius = 5) #round image corners
         
         # if user did not press submit button on dashboard tab
         else:
-            # Show Cover Image
-            create_flipcard_gasoline(image_path_front_card ='./images/COVER_GASOLINE.PNG', font_size_back='16px')
+            create_flipcard_gasoline(image_path_front_card ='./images/COVER_GASOLINE.PNG', font_size_back='16px') #Show Cover Image
     
     # PLOTS            
     with tab2:
@@ -804,14 +832,14 @@ def main():
             # Display the graph in Streamlit app
             # =============================================================================            
             # Absolute Values plot
-            #if gas_df is not None and not gas_df.empty:
             st.plotly_chart(create_gas_price_line_graph(gas_df), use_container_width = True)
         
             st.markdown('---')
+            
             # Month over Month % Change plot
             st.plotly_chart(plot_gas_price(gas_df), use_container_width = True)
 
-        rounded_image(image_path = './images/oldtimer.png', corner_radius = 5)
+        rounded_image(image_path = './images/oldtimer.png', corner_radius = 5) #round image corners
         
     with tab3:
         with st.expander('', expanded = True):
@@ -823,7 +851,7 @@ def main():
             elif gas_type == 'Diesel':
                 my_text_paragraph('<b>Raw Data - Diesel</b>')
             
-            # Show animation in Streamlit 
+            # Show lottie animation in Streamlit 
             show_lottie_animation(url = './images/animation_lkhk7c4h.json', key = 'oil', width=160, speed = 1, col_sizes = [45,40,40])
             
             # Show Dataframe in Streamlit
@@ -875,7 +903,7 @@ def main():
             
             # check if data is present then calculate total cost one way trip of route 66 e.g. (2278 miles / fuel efficiency) * latest retrieved price per gallon
             if latest_value is not None:
-                cost_route66 = round((2278/25.4)*latest_value, 2)
+                cost_route66 = round(2278/fuel_efficiency*latest_value, 2)
             else:
                 cost_route66 = ' - '
                 
@@ -883,7 +911,7 @@ def main():
             with col2:
                 st.metric(label = 'Distance (in miles)', value = 2278)
             with col4:
-                st.metric(label = 'Fuel Efficiency (mpg)', value =  25.4, help = 'Average miles per gallon')
+                st.metric(label = f'Fuel Efficiency {fuel_efficiency_metric_abbrev}', value = f"{fuel_efficiency:,.2f}", help = f'{fuel_efficiency_metric}')
             with col6:
                 st.metric(label = 'Cost one-way trip', value = f"${cost_route66}", help = 'Estimated cost for one-way trip')
             
@@ -994,16 +1022,16 @@ def main():
             with col2:
                 vertical_spacer(2)
                 my_text_paragraph(f'''This application is created as part of the <b><span style="color: #FF4E61;"> Streamlit Connections Hackathon 🎉</span></b> <a href="https://discuss.streamlit.io/t/connections-hackathon/47574" target="_blank">contest</a>. 
-                                  The <i>goal</i> of this app is to demonstrate how to easily setup and retrieve data with a Streamlit connection from one of my favorite <b>APIs</b> (Application Programming Interfaces).
-                                  Which is the API from the <i>U.S. Bureau of Labor Statistics </i> (BLS) by utilizing a custom built <b><span style="color: #FF4E61;"> Streamlit </span></b> connection 🔌 and being able to query {search_icon} the dataset(s) and save them as <a href="https://pandas.pydata.org/" target="_blank">pandas</a> dataframe(s). This is a more user-friendly approach versus original Python code from BLS, 
+                                  The <i>goal</i> of this app is to demonstrate how to easily setup and retrieve data with a Streamlit connection from <b>APIs</b> (Application Programming Interfaces).
+                                  This app retrieves data from the API from the <i>U.S. Bureau of Labor Statistics </i> (BLS) by utilizing a custom built <b><span style="color: #FF4E61;"> Streamlit </span></b> connection 🔌 and being able to query {search_icon} the dataset(s) and save them as <a href="https://pandas.pydata.org/" target="_blank">pandas</a> dataframe(s). This is a more user-friendly approach versus original Python code from BLS, 
                                   found at <a href="https://www.bls.gov/developers/api_python.htm#python2" target="_blank">www.bls.gov</a>.
-                                  For more information about the <b><span style="color: #0072b2;">streamlit_bls_connection</span></b> Python package, please refer to the official <a href="https://pypi.org/project/streamlit-bls-connection/" target=_blank">documentation</a>.
+                                  For more information about the <b><span style="color: #6f59f3;">streamlit_bls_connection</span></b> Python package, please refer to the official <a href="https://pypi.org/project/streamlit-bls-connection/" target=_blank">documentation</a>.
                                   Check out below example to get started if you would like to use it👇!
                                   ''', my_text_align = 'justify')
                 
                 st.image('./images/socket.png')
                 vertical_spacer(2)
-                my_text_paragraph('<b><span style="color: #0072b2;">example</span></b>', my_font_family = 'Ysabeau SC', add_border=True, my_font_weight=600, my_font_size='22px', border_color = "#0072b2")
+                my_text_paragraph('<b><span style="color: #6f59f3;">example</span></b>', my_font_family = 'Ysabeau SC', add_border=True, my_font_weight=600, my_font_size='22px', border_color = "#6f59f3")
                 
                 # Show codeblock in Streamlit
                 my_text_paragraph('''''')
@@ -1055,10 +1083,17 @@ def main():
                 col1, col2, col3 = st.columns([1, 2, 1])
                 with col2:
          
-                    st.image('./images/streamlit-logo-secondary-colormark-darktext.png')
+                    #st.image('./images/streamlit-logo-secondary-colormark-darktext.png') # just the streamlit logo 
+                    # clickable streamlit logo with hyperlink to website
+                    # requirements:
+                    # 1. image located in static folder
+                    # 2. config.toml has added: [server] and on newline: enableStaticServing = true
+                    # source: https://docs.streamlit.io/library/advanced-features/static-file-serving
+                    st.markdown('<a href="https://streamlit.io" target="_blank"><img src="./app/static/streamlit_logo.png" width="268"></a>', unsafe_allow_html=True)
                 col1, col2, col3 = st.columns([1, 8, 1])
                 with col2:
-                    st.image('./images/logo_small.svg', use_column_width=True)
+                    #st.image('./images/logo_small.svg', use_column_width=True)
+                    st.markdown('<a href="https://pypi.org/project/streamlit-bls-connection/" target="_blank"><img src="./app/static/logo.png" width="450"></a>', unsafe_allow_html=True)
 
 if __name__ == "__main__":
     main()

@@ -1,8 +1,7 @@
 # -*- coding: utf-8 -*-
-"""
+"""                                                                                                                                                                                               
 Created on Mon Jul 24 15:12:23 2023
-
-@author: tholl
+@author: tonyhollaar
 """
 import streamlit as st
 from streamlit.connections import ExperimentalBaseConnection
@@ -12,6 +11,20 @@ import json
 
 class BLSConnection(ExperimentalBaseConnection):
     def __init__(self, connection_name, **kwargs):
+        """
+        Initializes the BLSConnection object.
+        
+        Parameters:
+        ----------
+        connection_name : str
+            A name for the connection.
+        **kwargs : keyword arguments, optional
+            Additional keyword arguments that can be passed to the parent class constructor.
+        
+        Returns:
+        -------
+        None
+        """
         super().__init__(connection_name=connection_name, **kwargs)
         
     def _connect(self, **kwargs):
@@ -21,6 +34,40 @@ class BLSConnection(ExperimentalBaseConnection):
         pass
 
     def fetch_data(self, seriesids, start_year, end_year, api_key=None, **kwargs):
+        """
+        Fetches data from the Bureau of Labor Statistics (BLS) API and returns it as a dictionary of DataFrames.
+        
+        Parameters:
+        ----------
+        seriesids : list of str
+            The series IDs representing the BLS time series data to fetch. Each ID should be a string.
+        start_year : str
+            The start year for the data retrieval (inclusive), represented as a string.
+        end_year : str
+            The end year for the data retrieval (inclusive), represented as a string.
+        api_key : str, optional
+            The API key for accessing the BLS API. If not provided, some restrictions may apply to the data retrieval.
+            Note: Without an API key, you might be subject to limitations on the number of requests you can make.
+        **kwargs : keyword arguments, optional
+            Additional keyword arguments to customize the data retrieval.
+            Possible keyword arguments include:
+            - catalog : bool, optional
+                Whether to include catalog data for the series. Default is False.
+            - calculations : bool, optional
+                Whether to include calculated data for the series. Default is False.
+            - annualaverage : bool, optional
+                Whether to include annual average data for the series. Default is False.
+            - aspects : bool, optional
+                Whether to include additional aspects data for the series. Default is False.
+        
+        Returns:
+        -------
+        dict of DataFrame(s)
+            A dictionary with series IDs as keys and DataFrames as values, containing the fetched BLS data for each series.
+            Each DataFrame includes columns for 'date', 'value', '%_change_value', 'year', 'month', 'period'.
+            If the API key is provided, 'seriesID', 'series_title', and 'survey_name' columns are also included in the DataFrames.
+            Empty or all-None columns are excluded from the DataFrames.
+        """
         dataframes_dict = {}
         headers = {
             'Content-type': 'application/json',
@@ -103,8 +150,70 @@ class BLSConnection(ExperimentalBaseConnection):
     
     @classmethod
     @st.cache_data(ttl="1d")  # Cache the data for one day (24 hours)
-    #def query(cls, seriesids, start_year, end_year, catalog=False, calculations=False, annualaverage=False, aspects=False, api_key=None):
     def query(cls, seriesids, start_year, end_year, api_key=None, **kwargs):
+        """
+        Fetches data from the Bureau of Labor Statistics (BLS) API.
+        
+        Parameters:
+        ----------
+        seriesids : list of str
+            The series IDs representing the BLS time series data to fetch. Each ID should be a string.
+        start_year : str
+            The start year for the data retrieval (inclusive), represented as a string.
+        end_year : str
+            The end year for the data retrieval (inclusive), represented as a string.
+        api_key : str, optional
+            The API key for accessing the BLS API. If not provided, some restrictions may apply to the data retrieval.
+            Note: Without an API key, you might be subject to limitations on the number of requests you can make.
+        **kwargs : keyword arguments, optional
+            Additional keyword arguments to customize the data retrieval.
+            Possible keyword arguments include:
+            - catalog : bool, optional
+                Whether to include catalog data for the series. Default is False.
+            - calculations : bool, optional
+                Whether to include calculated data for the series. Default is False.
+            - annualaverage : bool, optional
+                Whether to include annual average data for the series. Default is False.
+            - aspects : bool, optional
+                Whether to include additional aspects data for the series. Default is False.
+
+        Returns:
+        -------
+        dict of DataFrame(s)
+            A dictionary with series IDs as keys and DataFrames as values, containing the fetched BLS data for each series.
+            Each DataFrame includes columns for 'date', 'value', '%_change_value', 'year', 'month', 'period'.
+            If the API key is provided, 'seriesID','series_title' and 'survey_name' and **kwargs columns are also included in the DataFrames.
+            Empty or all-None columns are excluded from the DataFrames.
+                
+        Example:
+        --------
+        # Setup connection
+        conn = st.experimental_connection('bls', type=BLSConnection)
+   
+        # Set your API key obtained from https://data.bls.gov/registrationEngine/
+        api_key = 'YOUR_API_KEY_HERE'  # Replace with your key or set to None.
+        
+        # Optionally, store the API key in secrets.toml under [connections_bls] with api_key = 'YOUR_KEY'
+        # and set api_key = st.secrets["connections_bls"]["api_key"] to use it securely.
+
+        # Calling the query method with additional keyword arguments
+        dataframes_dict = conn.query(
+            seriesids=seriesids_list = ['APU000074714', 'APU000074715'],
+            start_year= '2014',
+            end_year= '2023',
+            api_key=api_key,
+            catalog=True,
+            calculations=True,
+            annualaverage=True,
+            aspects=True
+        )
+   
+        # Access the retrieved DataFrames using the 'dataframes_dict' dictionary.
+        first_series_dataframe = dataframes_dict[seriesids_list[0]]  # DataFrame for the first series ID.
+        
+        # Alternatively, access the first DataFrame using its series ID.
+        first_series_dataframe = dataframes_dict['APU000074714']
+        """
         try:
             # This method will be called by the Streamlit app to retrieve data using the custom connection.
             # You can implement any caching logic or other data processing here.
@@ -115,8 +224,8 @@ class BLSConnection(ExperimentalBaseConnection):
                 seriesids=seriesids,
                 start_year=start_year,
                 end_year=end_year,
-                api_key=api_key,  # Pass the api_key to the fetch_data method
-                **kwargs          # Pass any additional keyword arguments to fetch_data
+                api_key=api_key,  # Pass the api_key or set to None
+                **kwargs          # Pass any additional keyword arguments
             )
             return dataframes_dict
         except KeyError:
