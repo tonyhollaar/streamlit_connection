@@ -56,6 +56,7 @@ font_style = """
             @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@500&display=swap');
             @import url('https://fonts.googleapis.com/css2?family=Archivo+Black&display=swap');
             @import url('https://fonts.googleapis.com/css2?family=Pacifico&display=swap');
+            @import url('https://fonts.googleapis.com/css2?family=Permanent+Marker&display=swap');
             /* Set the font family for header elements */
             h2 {
                 font-family: 'Lobster', cursive;
@@ -88,7 +89,7 @@ st.markdown(font_style, unsafe_allow_html=True)
 st.markdown("""
             <style>
             [data-testid="stMetricValue"] {
-                font-size: 36px;
+                font-size: 24px;
             }
             </style>
             """, unsafe_allow_html=True)
@@ -655,7 +656,7 @@ def main():
                 fuel_efficiency = st.number_input(label = f'🚗 Enter the fuel efficiency in {fuel_efficiency_metric} :green[{fuel_efficiency_metric_abbrev}]', min_value = 1.0, value = fuel_efficiency_value, step = 1.0)
                 st.markdown('---')
                 battery_capacity = st.number_input('🔋 Enter the Battery Usable Capacity :green[(in KWH)]', min_value = 1, value = 81, step = 1)
-                miles_per_gallon_equivalent = st.number_input('🚙 Enter the MPGe of your electric vehicle', min_value = 1, value = 97, step = 1)
+                miles_per_gallon_equivalent = st.number_input('🚙 Enter the MPGe of your electric vehicle', min_value = 1, value = 97, step = 1, help = '''miles per gallon of gasoline-equivalent and is a measurement of an EV's fuel efficiency.''')
                 st.markdown('---')
                 api_key_input = st.text_input("🔑 **[OPTIONAL]** Enter API Key :green[(U.S. Bureau of Labor Statistics)]", value = '', help = '''This is :green[**not required**] to retrieve data! 
                                                                                                                                                   However, with an API key you can:  
@@ -686,9 +687,9 @@ def main():
                 # =============================================================================
                 # 5 different timeseries are called from the API:
                 # - APU000074714 -> Gasoline, unleaded regular, per gallon/3.785 liters in U.S. city average, average price, not seasonally adjusted, source: https://data.bls.gov/timeseries/APU000074714
-                # - APU000074715
-                # - APU000074716
-                # - APU000072610
+                # - APU000074715 -> Gasoline, unleaded midgrade, per gallon/3.785 liters in U.S. city average, average price, not seasonally adjusted
+                # - APU000074716 -> Gasoline, unleaded premium, per gallon/3.785 liters in U.S. city average, average price, not seasonally adjusted
+                # - APU000072610 -> Automotive diesel fuel, per gallon/3.785 liters in U.S. city average, average price, not seasonally adjusted
                 # - APU000072610 -> Electricity per KWH in U.S. city average, average price, not seasonally adjusted #source: https://beta.bls.gov/dataViewer/view/timeseries/APU000072610
                 seriesids_list = ['APU000074714', 'APU000074715', 'APU000074716', 'APU000074717', 'APU000072610']
                 start_year_str = str(start_year)
@@ -758,18 +759,19 @@ def main():
                 formatted_date = gas_df['date'].iloc[-1].strftime('%m-%d-%Y')
                 my_text_paragraph(my_string = f'latest data as of {formatted_date}', my_font_size='12px')
                 
-                latest_value = gas_df[f'Price per {my_metric} ($)'].iloc[-1]  # Get the latest value
-                delta = gas_df['%_change_value'].iloc[-1]                 # Get the delta
+                latest_value_gas = gas_df[f'Price per {my_metric} ($)'].iloc[-1]  # Get the latest value
+                delta_gas = gas_df['%_change_value'].iloc[-1]                 # Get the delta
                 
                 col1, col2, col3, col4, col5, col6, col7 = st.columns([14, 48, 1, 36, 1, 48, 12])
                 with col2:
                     fuel_type_text = f'Gasoline, unleaded {gas_type.lower()}' if gas_type != 'Diesel' else f'Diesel'
-                    st.metric(label = f'Price per {my_metric}', value = f"${latest_value:.2f}", delta= f"{delta*100:.2f}%", label_visibility = 'visible',  delta_color="inverse", help = f'''{fuel_type_text}, per {my_metric.lower()} in U.S. city average, average price, not seasonally adjusted.  Below, you can find the **month-to-month variance** as a percentage change, relative to the previous month's price per gallon.''')
+                    st.metric(label = f'Price per {my_metric}', value = f"${latest_value_gas:.2f}", delta= f"{delta_gas*100:.2f}%", delta_color="inverse", help = f'''{fuel_type_text}, per {my_metric.lower()} in U.S. city average, average price, not seasonally adjusted.  Below, you can find the **month-to-month variance** as a percentage change, relative to the previous month's price per gallon.''')
                 with col4:
-                    st.metric(label = 'Full Tank', value = f"${fuel_tank_size*latest_value:.2f}",  delta= f"${delta*fuel_tank_size*latest_value:.2f}", label_visibility = 'visible',  delta_color="inverse", help = 'total cost of fuel for a full tank and month-to-month variance in usd.')
+                    st.metric(label = 'Full Tank', value = f"${fuel_tank_size*latest_value_gas:.2f}",  delta= f"${delta_gas*fuel_tank_size*latest_value_gas:.2f}", delta_color="inverse", help = 'total cost of fuel for a full tank and month-to-month variance in usd.')
                 with col6:
                     # per year 489 gallons #source: https://www.api.org/news-policy-and-issues/blog/2022/05/26/top-numbers-driving-americas-gasoline-demand
-                    st.metric(label = 'Estimated Yearly Cost', value = f"${usage_per_year*latest_value:.2f}",  delta= f"${delta*usage_per_year*latest_value:.2f}", label_visibility = 'visible', delta_color="inverse", help = f'The total estimated yearly cost is calculated based on a consumption of {int(usage_per_year)} {my_metric.lower()}s, with the month-to-month variance shown in USD below.')
+                    yearly_cost_gas = usage_per_year*latest_value_gas
+                    st.metric(label = 'Estimated Yearly Cost', value = f"${yearly_cost_gas:.2f}",  delta= f"${delta_gas*usage_per_year*latest_value_gas:.2f}", label_visibility = 'visible', delta_color="inverse", help = f'The total estimated yearly cost is calculated based on a consumption of {int(usage_per_year)} {my_metric.lower()}s, with the month-to-month variance shown in USD below.')
 
                 col1, col2, col3, col4, col5, col6, col7 = st.columns([14, 48, 1, 36, 1, 48, 12])
                 with col2:
@@ -787,7 +789,7 @@ def main():
                 # =============================================================================
                 st.markdown('---')
                 latest_value_electricity = electricity_df['value'].iloc[-1]  # Get the latest value
-                delta = electricity_df['%_change_value'].iloc[-1]  # Get the delta
+                delta_electricity = electricity_df['%_change_value'].iloc[-1]  # Get the delta
                 
                 my_text_header('Electricity', my_font_size = '48px', my_font_family = 'Orbitron')
                 my_text_paragraph('average electricity price, per kWh')
@@ -799,12 +801,13 @@ def main():
                 
                 col1, col2, col3, col4, col5, col6, col7 = st.columns([14, 48, 1, 36, 1, 48, 12])
                 with col2:
-                    st.metric(label='Price per kWh', value = f"${latest_value_electricity:.2f}", delta= f"{delta*100:.2f}%", label_visibility = 'visible',  delta_color="inverse", help = 'Price in USD of Electricity per Kilowatt-Hour (kWh)')
+                    st.metric(label='Price per kWh', value = f"${latest_value_electricity:.2f}", delta= f"{delta_electricity*100:.2f}%", label_visibility = 'visible',  delta_color="inverse", help = 'Price in USD of Electricity per Kilowatt-Hour (kWh)')
                 with col4:
-                    st.metric(label = 'Full Battery', value = f"${battery_capacity*latest_value_electricity:.2f}",  delta= f"${delta*battery_capacity*latest_value_electricity:.2f}", label_visibility = 'visible',  delta_color="inverse", help = 'Usable Battery capacity in kWh')
+                    st.metric(label = 'Full Battery', value = f"${battery_capacity*latest_value_electricity:.2f}",  delta= f"${delta_electricity*battery_capacity*latest_value_electricity:.2f}", label_visibility = 'visible',  delta_color="inverse", help = 'Usable Battery capacity in kWh')
                 with col6:
                     # per year 489 gallons #source: https://www.api.org/news-policy-and-issues/blog/2022/05/26/top-numbers-driving-americas-gasoline-demand
-                    st.metric(label = 'Estimated Yearly Cost', value = f"${(yearly_distance_traveled/distance_traveled_electric)*(battery_capacity*latest_value_electricity):.2f}", label_visibility = 'visible', delta_color="inverse", help = f'The total estimated yearly cost is calculated based on a consumption of {int(usage_per_year)} {my_metric.lower()}s, with the month-to-month variance shown in USD below.')
+                    yearly_cost_electricity = (yearly_distance_traveled/distance_traveled_electric)*(battery_capacity*latest_value_electricity)
+                    st.metric(label = 'Estimated Yearly Cost', value = f"${yearly_cost_electricity:.2f}", delta = f"${delta_electricity*(yearly_distance_traveled/distance_traveled_electric)*(battery_capacity*latest_value_electricity):.2f}", label_visibility = 'visible', delta_color="inverse", help = f'The total estimated yearly cost is calculated based on a consumption of {int(usage_per_year)} {my_metric.lower()}s, with the month-to-month variance shown in USD below.')
                 
                 col1, col2, col3, col4, col5, col6, col7 = st.columns([14, 48, 1, 36, 1, 48, 12])
                 with col2:
@@ -817,29 +820,104 @@ def main():
                               help = f'Estimated Distance in {distance_metric} that can be traveled with a full battery charge.\n\nThe formula used for calculation is: distance_traveled_electric = battery_capacity * miles_per_kWh / 33.7.\n\nMiles per kWh (m/kWh) is a measure of how efficient the electric vehicle is in terms of energy consumption. It indicates the number of miles the vehicle can travel on one kilowatt-hour of electricity. The higher the miles per kWh value, the more efficient the vehicle.\n\nThe constant 33.7 is used to convert the miles per kWh value to miles per gallon equivalent (MPGe) for comparison with traditional gasoline-powered vehicles. It represents the energy content of one gallon of gasoline in kilowatt-hours.\n\nPlease note that the actual distance traveled may vary depending on driving conditions, vehicle model, and battery health.')
                 with col6:
                     yearly_distance_traveled = fuel_efficiency * usage_per_year
-                    st.metric(label = f'Yearly distance in {distance_metric}', value = f"{yearly_distance_traveled:,.0f}", help = f'''Estimated **yearly distance** in {distance_metric} that can be traveled. **formula:** `{fuel_efficiency} * {usage_per_year}` rounded to nearest whole number.''')
+                    st.metric(label = f'Yearly distance in {distance_metric}', value = f"{yearly_distance_traveled:,.0f}", help = f'''set equal to yearly distance in miles of gasoline car for comparison of yearly cost''')
+                
+                # =============================================================================
+                # Differences                    
+                # =============================================================================
+                st.markdown('---')
+                my_text_header('Comparison', my_font_size = '56px', my_font_family = 'Permanent Marker')
+                my_text_paragraph('<b>gasoline vs. electricity</b>', my_font_size = '18px', my_font_family = 'Ysabeau SC')
+                
+                col1, col2, col3, col4, col5 = st.columns([2,4,1,4,1])
+                
+                with col2:
+                    # =============================================================================
+                    # Cost per 100 miles/km
+                    # =============================================================================
+                    # GAS
+                    # Step 1: Calculate the number of gallons needed to cover 100 (miles).
+                    num_gallons_100 = 100 / fuel_efficiency
+                    
+                    # Step 2: Calculate the cost of the required gallons.
+                    cost_100_distance_metric = latest_value_gas * num_gallons_100
+                    
+                    # ELECTRIC
+                    #cost_ev_100_distance_metric = ((33.7 * latest_value_electricity)/miles_per_gallon_equivalent)*100
+                    cost_ev_100_distance_metric = (100/miles_per_gallon_equivalent)*(33.7 * latest_value_electricity)
+                    
+                    # Diff
+                    delta_gas_ev_100 = (cost_ev_100_distance_metric - cost_100_distance_metric)/cost_100_distance_metric
+                    
+                    
+                    st.metric(label = f'Cost per 100 {distance_metric}', 
+                              value = f"${cost_100_distance_metric:.2f} vs. ${cost_ev_100_distance_metric:.2f}", 
+                              delta = f"{delta_gas_ev_100:.2%}",  delta_color="inverse", 
+                              help = f'''Comparison of the cost per 100 {distance_metric}:  
+                                      formula for fuel-powered vehicle:  
+                                      $Cost\ per\ 100\ {distance_metric} = \\dfrac{{100}}{{\\text{{Vehicle's MPG}}}} \\times \\text{{Price per Gallon}}$  
+                                      formula for electric vehicle:  
+                                      $Cost\ per\ 100\ {distance_metric} = \\dfrac{{100}}{{\\text{{Vehicle's MPGe}}}} \\times (\\text{{Price per kWh}} \\times 33.7 \\text{{ kWh}})$ 
+                                      ''')
+                    # =============================================================================
+                    # Range in miles/km                 
+                    # =============================================================================
+                    delta_range =  (distance_traveled_electric - distance_traveled) / distance_traveled
+                    st.metric(label = f'range in {distance_metric}', 
+                              value = f"{distance_traveled:.0f} vs. {distance_traveled_electric:.0f}", 
+                              delta = f"{delta_range:.2%}", 
+                              help = f'''Comparison of the maximum estimated distance, in {distance_metric}, that a vehicle can travel on a **full gasoline tank** versus an electric vehicle on a **full battery charge**, before needing a refuel or recharge.''')
+                                
+                with col4:
+                    # =============================================================================
+                    # Yearly Cost                    
+                    # =============================================================================
+                    yearly_savings = (yearly_cost_electricity - yearly_cost_gas)
+                    savings_str = f"${yearly_savings:,.2f}" if yearly_savings >= 0 else f"-${abs(yearly_savings):,.2f}"
+                    st.metric(label = 'Estimated Yearly Cost', 
+                              value = f"${yearly_cost_gas:,.0f} vs. ${yearly_cost_electricity:,.0f}", 
+                              delta = savings_str, 
+                              delta_color = 'inverse')
+                    # =============================================================================
+                    # 5 Year Cost                    
+                    # =============================================================================
+                    five_year_savings_str = f"${yearly_savings*5:,.2f}" if yearly_savings >= 0 else f"-${abs(yearly_savings*5):,.2f}"
+                    st.metric(label = 'Estimated 5 Year Cost', 
+                              value = f"${yearly_cost_gas*5:,.0f} vs. ${yearly_cost_electricity*5:,.0f}", 
+                              delta = five_year_savings_str, 
+                              delta_color = 'inverse')
+                
+                col1, col2 = st.columns([1,20])
+                with col2:
+                    vertical_spacer(2)
+                    message = st.chat_message("assistant", avatar = "ℹ️")
+                    message.write("the arrows indicate estimated savings if you switch to an electric vehicle.")
                     
             rounded_image(image_path = "./images/car_headlights.png", corner_radius = 5) #round image corners
         
         # if user did not press submit button on dashboard tab
         else:
-            create_flipcard_gasoline(image_path_front_card ='./images/COVER_GASOLINE.PNG', font_size_back='16px') #Show Cover Image
+            create_flipcard_gasoline(image_path_front_card ='./images/COVER_GASOLINE.PNG', 
+                                     font_size_back='16px') #Show Cover Image
     
-    # PLOTS            
+    # PLOTS
     with tab2:
         with st.expander('', expanded = True):
             # =============================================================================
             # Display the graph in Streamlit app
             # =============================================================================            
             # Absolute Values plot
-            st.plotly_chart(create_gas_price_line_graph(gas_df), use_container_width = True)
+            st.plotly_chart(create_gas_price_line_graph(gas_df), 
+                            use_container_width = True)
         
             st.markdown('---')
             
             # Month over Month % Change plot
-            st.plotly_chart(plot_gas_price(gas_df), use_container_width = True)
+            st.plotly_chart(plot_gas_price(gas_df), 
+                            use_container_width = True)
 
-        rounded_image(image_path = './images/oldtimer.png', corner_radius = 5) #round image corners
+        rounded_image(image_path = './images/oldtimer.png', 
+                      corner_radius = 5) #round image corners
         
     with tab3:
         with st.expander('', expanded = True):
@@ -1011,6 +1089,7 @@ def main():
             st.map(df, latitude='latitude', longitude='longitude', size='size', color='color')
             st.dataframe(df, use_container_width = True)
             st.image('./images/route66_logo.png')
+            st.caption('''Disclaimer: This app provides information about selected locations along Route 66 but does not cover all places. It is intended for general informational purposes only and does not serve as a comprehensive travel guide. Users are encouraged to verify details and consult official travel resources for a complete representation of locations along Route 66. The app's creator makes no warranties about the accuracy or reliability of the content and shall not be held liable for any damages or losses arising from its use. Use this app responsibly and enjoy your journey along Route 66!''')
     
     # ABOUT TAB
     with tab5:
@@ -1022,7 +1101,7 @@ def main():
             with col2:
                 vertical_spacer(2)
                 my_text_paragraph(f'''This application is created as part of the <b><span style="color: #FF4E61;"> Streamlit Connections Hackathon 🎉</span></b> <a href="https://discuss.streamlit.io/t/connections-hackathon/47574" target="_blank">contest</a>. 
-                                  The <i>goal</i> of this app is to demonstrate how to easily setup and retrieve data with a Streamlit connection from <b>APIs</b> (Application Programming Interfaces).
+                                  The <i>goal</i> of this app is to demonstrate how to easily setup and retrieve data with a Streamlit connection from <b>APIs</b> (Application Programming Interfaces) and create amazing applications!
                                   This app retrieves data from the API from the <i>U.S. Bureau of Labor Statistics </i> (BLS) by utilizing a custom built <b><span style="color: #FF4E61;"> Streamlit </span></b> connection 🔌 and being able to query {search_icon} the dataset(s) and save them as <a href="https://pandas.pydata.org/" target="_blank">pandas</a> dataframe(s). This is a more user-friendly approach versus original Python code from BLS, 
                                   found at <a href="https://www.bls.gov/developers/api_python.htm#python2" target="_blank">www.bls.gov</a>.
                                   For more information about the <b><span style="color: #6f59f3;">streamlit_bls_connection</span></b> Python package, please refer to the official <a href="https://pypi.org/project/streamlit-bls-connection/" target=_blank">documentation</a>.
