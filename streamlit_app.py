@@ -631,38 +631,66 @@ def main():
             # Display user form with options to filter data in sidebar
             with st.sidebar.form("user_form"):
                 my_text_paragraph('User Settings')
-                start_year, end_year = st.select_slider(label = "📆 Select Date Range", options = list(range(2014, 2024)), value = (2014, 2023))  # Default range of years
+                start_year, end_year = st.select_slider(label = "📆 Select Date Range", 
+                                                        options = list(range(2014, 2024)), 
+                                                        value = (2014, 2023))  # Default range of years
                 
-                #metric = st.radio(label = "📐 Select Metrics:", options = ["Gallons", "Liters"], index = 0, horizontal = True) # Default selection is "Gallons"
-                metric = st.radio(label = "📐 Select System of Measurement", options = ["Imperial System", "Metric System"], index = 0, horizontal = True, 
+                metric = st.radio(label = "📐 Select System of Measurement", 
+                                  options = ["Imperial System", "Metric System"], 
+                                  index = 0, 
+                                  horizontal = True, 
                                   help="""If you select the **Imperial System**, the units of measurement will be in `gallons` for fuel and `miles` for distance (used in the U.S.).
                                         Alternatively, if you choose the **Metric System**, the units of measurement will be in `liters` for fuel and `kilometers` for distance (used by most of the world).""")
-                
-                #distance_metric = st.radio(label = "", options = ["Miles", "Kilometers"], index = 0, horizontal = True, label_visibility='collapsed') # Default selection is "Gallons"
                 
                 fuel_efficiency_metric = "miles per gallon" if metric == "Imperial System" else "kilometers per liter"
                 fuel_efficiency_metric_abbrev = "(MPG)" if metric == "Imperial System" else "(KM/L)"
                 distance_metric = "miles" if metric == "Imperial System" else "km"
-                
                 my_metric = 'Gallon' if metric == 'Imperial System' else 'Liter'
                 fuel_tank_size_value = 14.00 if metric == 'Imperial System' else 14 * 3.785411784
                 fuel_per_year = 489.00 if metric == 'Imperial System' else 489.00 * 3.785411784
+                
                 # miles to km = 1.60934, average miles per gallon = 25.40 (user can adjust), 3.78541 liters per gallon
                 fuel_efficiency_value = 25.40 if metric == 'Imperial System' else 25.40 * (1.60934 / 3.785411784)
                 
-                gas_type = st.radio(label = "⛽ Select Fuel Type", options = ["Regular", "Midgrade", "Premium", "Diesel"], index = 0, horizontal = True) # Default selection is "Gallons"
-                fuel_tank_size = st.number_input(f'🕳️ Enter the Fuel Tank Size :green[(in {my_metric}s)]', min_value = 1.0, max_value = 100.0, value = float(fuel_tank_size_value), step = 1.0)
-                usage_per_year = st.number_input(label = f'🛢️ Enter the fuel amount used per year :green[(in {my_metric}s)]', min_value = 1.0, value = float(fuel_per_year), step = 1.0)
-                fuel_efficiency = st.number_input(label = f'🚗 Enter the fuel efficiency in {fuel_efficiency_metric} :green[{fuel_efficiency_metric_abbrev}]', min_value = 1.0, value = fuel_efficiency_value, step = 1.0)
+                gas_type = st.radio(label = "⛽ Select Fuel Type", 
+                                    options = ["Regular", "Midgrade", "Premium", "Diesel"], 
+                                    index = 0, # Default selection is "Gallons"
+                                    horizontal = True) 
+                
+                fuel_tank_size = st.number_input(f'🕳️ Enter the Fuel Tank Size :green[(in {my_metric}s)]', 
+                                                 min_value = 1.0, 
+                                                 max_value = 100.0, 
+                                                 value = float(fuel_tank_size_value), 
+                                                 step = 1.0)
+                
+                usage_per_year = st.number_input(label = f'🛢️ Enter the fuel amount used per year :green[(in {my_metric}s)]', 
+                                                 min_value = 1.0, 
+                                                 value = float(fuel_per_year), 
+                                                 step = 1.0)
+                
+                fuel_efficiency = st.number_input(label = f'🚗 Enter the fuel efficiency in {fuel_efficiency_metric} :green[{fuel_efficiency_metric_abbrev}]', 
+                                                  min_value = 1.0, 
+                                                  value = fuel_efficiency_value, 
+                                                  step = 1.0)
                 st.markdown('---')
-                battery_capacity = st.number_input('🔋 Enter the Battery Usable Capacity :green[(in KWH)]', min_value = 1, value = 81, step = 1)
-                miles_per_gallon_equivalent = st.number_input('🚙 Enter the MPGe of your electric vehicle', min_value = 1, value = 97, step = 1, help = '''miles per gallon of gasoline-equivalent and is a measurement of an EV's fuel efficiency.''')
+                battery_capacity = st.number_input(label = '🔋 Enter the Battery Usable Capacity :green[(in KWH)]', 
+                                                   min_value = 1, 
+                                                   value = 81, 
+                                                   step = 1)
+                miles_per_gallon_equivalent = st.number_input(label = '🚙 Enter the MPGe of your electric vehicle', 
+                                                              min_value = 1, 
+                                                              value = 97, 
+                                                              step = 1, 
+                                                              help = '''miles per gallon of gasoline-equivalent and is a measurement of an EV's fuel efficiency.''')
                 st.markdown('---')
-                api_key_input = st.text_input("🔑 **[OPTIONAL]** Enter API Key :green[(U.S. Bureau of Labor Statistics)]", value = '', help = '''This is :green[**not required**] to retrieve data! 
-                                                                                                                                                  However, with an API key you can:  
-                                                                                                                                                  - execute up to 500 **queries** per day versus 25 **queries** per day  
-                                                                                                                                                  - obtain additional **metadata** such as: *series_title*, *survey_name*, *catalog*  
-                                                                                                                                                  To obtain an API Key, register at https://data.bls.gov/registrationEngine/''')
+                api_key_input = st.text_input("🔑 **[OPTIONAL]** Enter API Key :green[(U.S. Bureau of Labor Statistics)]", 
+                                              value = '', 
+                                              help = '''This is :green[**not required**] to retrieve data! 
+                                                        However, with an API key you can:  
+                                                        - execute up to 500 **queries** per day versus 25 **queries** per day  
+                                                        - obtain additional **metadata** such as: *series_title*, *survey_name*, *catalog*  
+                                                        To obtain an API Key, register at https://data.bls.gov/registrationEngine/''')
+                                                        
                 submit_button = st.form_submit_button(label="Submit", use_container_width = True)
             
             social_media_links(margin_before = 0) #Show Social Media links    
@@ -830,7 +858,6 @@ def main():
                 my_text_paragraph('<b>gasoline vs. electricity</b>', my_font_size = '18px', my_font_family = 'Ysabeau SC')
                 
                 col1, col2, col3, col4, col5 = st.columns([2,4,1,4,1])
-                
                 with col2:
                     # =============================================================================
                     # Cost per 100 miles/km
@@ -843,9 +870,8 @@ def main():
                     cost_100_distance_metric = latest_value_gas * num_gallons_100
                     
                     # ELECTRIC
-                    #cost_ev_100_distance_metric = ((33.7 * latest_value_electricity)/miles_per_gallon_equivalent)*100
-                    cost_ev_100_distance_metric = (100/miles_per_gallon_equivalent)*(33.7 * latest_value_electricity)
-                    
+                    cost_ev_100_distance_metric = (100 / miles_per_gallon_equivalent) * (33.7 * latest_value_electricity) if metric == 'Imperial System' else (160.934 / miles_per_gallon_equivalent) * (10.53125 * latest_value_electricity)
+
                     # Diff
                     delta_gas_ev_100 = (cost_ev_100_distance_metric - cost_100_distance_metric)/cost_100_distance_metric
                     
@@ -878,6 +904,7 @@ def main():
                               value = f"${yearly_cost_gas:,.0f} vs. ${yearly_cost_electricity:,.0f}", 
                               delta = savings_str, 
                               delta_color = 'inverse')
+                    
                     # =============================================================================
                     # 5 Year Cost                    
                     # =============================================================================
@@ -909,7 +936,6 @@ def main():
             # Absolute Values plot
             st.plotly_chart(create_gas_price_line_graph(gas_df), 
                             use_container_width = True)
-        
             st.markdown('---')
             
             # Month over Month % Change plot
@@ -954,7 +980,7 @@ def main():
             # Display the data in Streamlit
             st.markdown('---')
             
-            # header
+            # Header
             my_text_paragraph('<b>Raw Data - Electricity</b>')
             
             # Show animation in Streamlit 
