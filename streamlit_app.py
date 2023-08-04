@@ -21,16 +21,21 @@ Created on Mon Jul 24 15:13:46 2023
 #  |______|_____|____/|_|  \_\/_/    \_\_|  \_\_____|______|_____/ 
 #                                                                  
 # =============================================================================
-import streamlit as st
-import pandas as pd
-from datetime import datetime
-from streamlit_bls_connection import BLSConnection
-import plotly.express as px
-import plotly.graph_objects as go
-from streamlit_lottie import st_lottie
-import json
-import base64
-import numpy as np
+import streamlit as st  # Streamlit library for creating interactive web apps
+import pandas as pd  # Pandas library for data manipulation and analysis
+from datetime import datetime  # Datetime module for working with dates and times
+from streamlit_bls_connection import BLSConnection  # Custom library for connecting to BLS API
+import plotly.express as px  # Plotly Express for creating interactive visualizations
+import plotly.graph_objects as go  # Plotly Graph Objects for more advanced visualizations
+from streamlit_lottie import st_lottie  # Streamlit Lottie for displaying Lottie animations
+import json  # JSON library for working with JSON data
+import base64  # Base64 library for encoding and decoding binary data
+import numpy as np  # NumPy library for numerical operations
+import requests  # Requests library for making HTTP requests
+
+# to convert img to html
+# source: https://github.com/dataprofessor/st-demo-image-markdown/tree/master
+from utilities import load_bootstrap  # Custom utility function for loading Bootstrap CSS
 
 # =============================================================================
 #   _____        _____ ______    _____ ______ _______ _    _ _____  
@@ -163,11 +168,9 @@ def show_lottie_animation(url, key, reverse=False, height=400, width=400, speed=
                   )
         vertical_spacer(margin_after)
 
-import base64
-import requests
-import streamlit as st
-from utilities import load_bootstrap
-
+# The function returns the Bootstrap CSS stylesheet for Streamlit.
+# It loads the Bootstrap styles to improve the appearance of image
+# source: https://github.com/dataprofessor/st-demo-image-markdown/blob/master/utilities.py
 load_bootstrap()
 
 def img_to_html(img_url):
@@ -177,13 +180,6 @@ def img_to_html(img_url):
     return img_html
 
 def create_flipcard_gasoline(image_path_front_card=None, font_size_back='10px', my_header='', **kwargs):
-# =============================================================================
-#     # Open the image for the front of the card
-#     with open(image_path_front_card, 'rb') as file:
-#         contents = file.read()
-#         data_url = base64.b64encode(contents).decode("utf-8")
-# =============================================================================
-#<img src="data:image/png;base64,{data_url}" style="width: 100%; height: 100%; object-fit: cover; border-radius: 10px;">
     # Convert the image URL to an HTML image element
     front_image_html = img_to_html(image_path_front_card)
 
@@ -945,8 +941,7 @@ def main():
                         Formula for electric vehicle:  
                         - $Range\ Battery\ = \\left( \\dfrac{{\\text{{battery\ capacity (kWh)}} \\times \\text{{MPGe}}}}{{33.7 \\text{{ kWh}}}} \\right)$  
                         - $Estimated\\ Yearly\\ Cost = \\dfrac{{\\text{{yearly distance traveled}}}}{{\\text{{range battery}}}} \\times (\\text{{battery capacity (kWh)}} \\times \\text{{Price per kWh}})$  
-                        '''
-                    )
+                        ''')
                     
                     # =============================================================================
                     # 5 Year Cost                    
@@ -976,7 +971,7 @@ def main():
                                      #image_path_front_card ='./images/cover_gasoline.png', 
                                      font_size_back='16px') #Show Cover Image
     
-    # PLOTS
+    # PLOTS TAB
     with tab2:
         with st.expander('', expanded = True):
             my_text_header('Plots', my_font_size='48px', my_font_family='Fredericka the Great')
@@ -994,7 +989,7 @@ def main():
 
         rounded_image(image_path = './images/oldtimer.png', 
                       corner_radius = 5) #round image corners
-        
+    # RAW DATA TAB
     with tab3:
         with st.expander('', expanded = True):
             # set header
@@ -1051,6 +1046,7 @@ def main():
                                    file_name = 'Electricity_Prices.CSV',
                                    help = 'Download your dataframe to .CSV',
                                    mime='text/csv')
+    # ROUTE66 TAB
     with tab4:
         with st.expander('', expanded = True):
             my_text_header('ROUTE 66', my_font_size = '48px', my_font_family = 'Archivo Black')
@@ -1254,11 +1250,11 @@ def main():
     # Disclaimer
     with tab6:
         with st.expander('', expanded=True):
-            vertical_spacer(1)
+            vertical_spacer(1) #linebreak
             my_text_header('Disclaimer', my_font_size='48px', my_font_family='Poiret One')
             col1, col2, col3 = st.columns([1, 10, 1])
             with col2:
-                vertical_spacer(2)
+                vertical_spacer(2) #linebreaks 2x
                 my_text_paragraph('''The gasoline, diesel, electricity prices and comparison displayed on this app are for <b><span style="color: #456cff;">informational purposes</span></b> only. 
                                   Data sourced from the U.S. Bureau of Labor Statistics (BLS.gov) is provided <b><span style="color: #456cff;">without any warranty or guarantee</span></b>  of <b><span style="color: #456cff;">accuracy</span></b> or <b><span style="color: #456cff;">reliability</span></b>. 
                                   The creator does <b><span style="color: #456cff;">not</span></b> provide financial, investment, or consumption advice. Users are advised to verify the data from official sources and seek professional advice before making any financial or consumption-related decisions. 
@@ -1266,9 +1262,9 @@ def main():
                                   ''', my_text_align='justify')
             col1, col2, col3 = st.columns([2,8,2])
             with col2:
-                vertical_spacer(4)
+                vertical_spacer(4) #linebreaks 4x
                 st.image('./images/disclaimer_logo.png')
-                vertical_spacer(6)
-                #vertical_spacer(5)
+                vertical_spacer(6) #linebreaks 6x
+                
 if __name__ == "__main__":
     main()
