@@ -160,7 +160,7 @@ def show_lottie_animation(url, key, reverse=False, height=400, width=400, speed=
                   )
         vertical_spacer(margin_after)
 
-def create_flipcard_gasoline(image_path_front_card=None, font_size_back='10px', my_header='', **kwargs):
+def create_flipcard_gasoline(image_path_front_card = None, font_size_back='10px', my_header='', **kwargs):
     # Open the image for the front of the card
     with open(image_path_front_card, 'rb') as file:
         contents = file.read()
@@ -947,7 +947,7 @@ def main():
         
         # if user did not press submit button on dashboard tab
         else:
-            create_flipcard_gasoline(image_path_front_card ='https://raw.githubusercontent.com/tonyhollaar/streamlit_connection/main/images/gaspricewatcher.png', 
+            create_flipcard_gasoline(image_path_front_card ='https://raw.githubusercontent.com/tonyhollaar/streamlit_connection/main/images/COVER_GASOLINE.png', 
                                      font_size_back='16px') #Show Cover Image
     
     # PLOTS
