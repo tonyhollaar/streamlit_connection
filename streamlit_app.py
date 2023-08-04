@@ -161,20 +161,16 @@ def show_lottie_animation(url, key, reverse=False, height=400, width=400, speed=
         vertical_spacer(margin_after)
 
 import base64
+import requests
 import streamlit as st
 from utilities import load_bootstrap
 
 load_bootstrap()
 
-def img_to_bytes(img_path):
-    img_bytes = img_path.read_bytes()
-    encoded = base64.b64encode(img_bytes).decode()
-    return encoded
-
-def img_to_html(img_path):
-    img_html = "<img src='data:image/png;base64,{}' class='img-fluid'>".format(
-        img_to_bytes(img_path)
-    )
+def img_to_html(img_url):
+    response = requests.get(img_url)
+    encoded = base64.b64encode(response.content).decode()
+    img_html = "<img src='data:image/png;base64,{}' class='img-fluid'>".format(encoded)
     return img_html
 
 def create_flipcard_gasoline(image_path_front_card=None, font_size_back='10px', my_header='', **kwargs):
@@ -970,8 +966,8 @@ def main():
         # if user did not press submit button on dashboard tab
         else:
             image_url = 'https://raw.githubusercontent.com/tonyhollaar/streamlit_connection/main/images/COVER_GASOLINE.png'
-            create_flipcard_gasoline(#image_path_front_card = image_url,
-                                     image_path_front_card ='./images/cover_gasoline.png', 
+            create_flipcard_gasoline(image_path_front_card = image_url,
+                                     #image_path_front_card ='./images/cover_gasoline.png', 
                                      font_size_back='16px') #Show Cover Image
     
     # PLOTS
