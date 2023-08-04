@@ -175,7 +175,7 @@ def create_flipcard_gasoline(image_path_front_card = None, font_size_back='10px'
     card_html.append(f"""
         <div class="flashcard">
             <div class='front'>
-                <img src="data:image/png;base64,https://raw.githubusercontent.com/tonyhollaar/streamlit_connection/main/images/COVER_GASOLINE.png" style="width: 100%; height: 100%; object-fit: cover; border-radius: 10px;">
+                <img src="{image_path_front_card}" style="width: 100%; height: 100%; object-fit: cover; border-radius: 10px;">
             </div>
             <div class="back">
                 <h2>Instructions</h2>
@@ -949,7 +949,7 @@ def main():
         
         # if user did not press submit button on dashboard tab
         else:
-            create_flipcard_gasoline(image_path_front_card = None, 
+            create_flipcard_gasoline(image_path_front_card = "https://raw.githubusercontent.com/tonyhollaar/streamlit_connection/main/images/COVER_GASOLINE.png", 
                                      font_size_back='16px') #Show Cover Image
     
     # PLOTS
