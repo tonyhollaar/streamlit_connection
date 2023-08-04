@@ -755,7 +755,7 @@ def main():
                 # =============================================================================
                 # [OPTIONAL] Retrieve the API key from Streamlit secrets -> not needed but higher amount of daily queries allowed e.g. 500 versus 25                
                 # register at https://data.bls.gov/registrationEngine/ to obtain your API key and put it in .streamlit/secrets.toml file
-                # [connections.bls]
+                # [connections_bls]
                 # api_key = "XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX"
                 # =============================================================================
                 try:

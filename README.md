@@ -169,12 +169,25 @@ Having an API key will provide you with a more comprehensive and seamless experi
 ## How do I use the API Key?
 There are two options:
 
-1. Enter the API key in the sidebar of the application.
-2. If you cloned this repository and run it locally on your machine you can add a secrets.toml file with the following text and 'save' the file:
+1. Enter the API key in the .query method as a string!
 ```Python
-[bls_connection]
-'XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX'
+from streamlit_bls_connection import BLSConnection 
+conn = st.experimental_connection('bls', type=BLSConnection)
+conn.query(seriesids_list=['APU000074714'], start_year_str='2020', end_year_str='2023', api_key='XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX', catalog=True, calculations=True, annualaverage=True, aspects=True)
+```
+
+2. If you cloned this repository and run it on your local machine you can add a secrets.toml file in your .streamlit subfolder (.streamlit/secrets.toml) with the below text and replace with your own API key and 'save':
+```Python
+[connections_bls]
+api_key = "XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX"
 ``` 
+
+In your main.py file you can then add:
+```Python
+from streamlit_bls_connection import BLSConnection 
+conn = st.experimental_connection('bls', type=BLSConnection)
+conn.query(seriesids_list=['APU000074714'], start_year_str='2020', end_year_str='2023', api_key=st.secrets["connections_bls"]["api_key"], catalog=True, calculations=True, annualaverage=True, aspects=True)
+```
 
 ## Use in Google Colab
 If you want to try it out in the cloud ☁️, to see the `streamlit-bls-connection` with a Streamlit app in action, you can click the link below!
