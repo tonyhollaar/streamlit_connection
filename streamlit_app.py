@@ -626,7 +626,10 @@ def main():
     tab1, tab2, tab3, tab4, tab5, tab6 = st.tabs(['🛡️ Dashboard', '📈 Plots', '🔢 Raw Data', '🛣️ Route66', 'ℹ️ Streamlit Connection API', '📜 Disclaimer'])
     with tab1:
         with st.sidebar:
-            st.image('./images/gaspricewatcher.PNG') #display logo
+            from PIL import Image
+            image = Image.open('./images/gaspricewatcher.png')
+            
+            st.image('image') #display logo
             
             # Display user form with options to filter data in sidebar
             with st.sidebar.form("user_form"):
