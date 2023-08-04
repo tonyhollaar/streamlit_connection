@@ -160,13 +160,33 @@ def show_lottie_animation(url, key, reverse=False, height=400, width=400, speed=
                   )
         vertical_spacer(margin_after)
 
-def create_flipcard_gasoline(image_path_front_card = None, font_size_back='10px', my_header='', **kwargs):
+import base64
+import streamlit as st
+from utilities import load_bootstrap
+
+load_bootstrap()
+
+def img_to_bytes(img_path):
+    img_bytes = img_path.read_bytes()
+    encoded = base64.b64encode(img_bytes).decode()
+    return encoded
+
+def img_to_html(img_path):
+    img_html = "<img src='data:image/png;base64,{}' class='img-fluid'>".format(
+        img_to_bytes(img_path)
+    )
+    return img_html
+
+def create_flipcard_gasoline(image_path_front_card=None, font_size_back='10px', my_header='', **kwargs):
 # =============================================================================
 #     # Open the image for the front of the card
 #     with open(image_path_front_card, 'rb') as file:
 #         contents = file.read()
 #         data_url = base64.b64encode(contents).decode("utf-8")
 # =============================================================================
+#<img src="data:image/png;base64,{data_url}" style="width: 100%; height: 100%; object-fit: cover; border-radius: 10px;">
+    # Convert the image URL to an HTML image element
+    front_image_html = img_to_html(image_path_front_card)
 
     # Create empty list that will keep the HTML code needed for each card with header+text
     card_html = []
@@ -175,7 +195,7 @@ def create_flipcard_gasoline(image_path_front_card = None, font_size_back='10px'
     card_html.append(f"""
         <div class="flashcard">
             <div class='front'>
-                <img src="{image_path_front_card}" style="width: 100%; height: 100%; object-fit: cover; border-radius: 10px;">
+                {front_image_html}
             </div>
             <div class="back">
                 <h2>Instructions</h2>
@@ -949,7 +969,9 @@ def main():
         
         # if user did not press submit button on dashboard tab
         else:
-            create_flipcard_gasoline(image_path_front_card = None, 
+            image_url = 'https://raw.githubusercontent.com/tonyhollaar/streamlit_connection/main/images/COVER_GASOLINE.png'
+            create_flipcard_gasoline(image_path_front_card = image_url,
+                                     #image_path_front_card ='./images/cover_gasoline.png', 
                                      font_size_back='16px') #Show Cover Image
     
     # PLOTS
