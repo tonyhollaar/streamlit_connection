@@ -56,6 +56,9 @@ font_style = """
             @import url('https://fonts.googleapis.com/css2?family=Archivo+Black&display=swap');
             @import url('https://fonts.googleapis.com/css2?family=Pacifico&display=swap');
             @import url('https://fonts.googleapis.com/css2?family=Permanent+Marker&display=swap');
+            @import url('https://fonts.googleapis.com/css2?family=Fredericka+the+Great&display=swap');
+            @import url('https://fonts.googleapis.com/css2?family=Bad+Script&display=swap');
+            @import url('https://fonts.googleapis.com/css2?family=Poiret+One&display=swap');
             /* Set the font family for header elements */
             h2 {
                 font-family: 'Lobster', cursive;
@@ -976,6 +979,7 @@ def main():
     # PLOTS
     with tab2:
         with st.expander('', expanded = True):
+            my_text_header('Plots', my_font_size='48px', my_font_family='Fredericka the Great')
             # =============================================================================
             # Display the graph in Streamlit app
             # =============================================================================            
@@ -993,13 +997,15 @@ def main():
         
     with tab3:
         with st.expander('', expanded = True):
-        
-            # Set header on page in Streamlit
+            # set header
+            my_text_header('Raw Data', my_font_size='48px', my_font_family='Bad Script')
+            
+            # Set subheader on page in Streamlit
             if gas_type != 'Diesel':
-                my_text_paragraph('<b>Raw Data - Gasoline</b>')
+                my_text_paragraph('<b>Gasoline</b>')
                 my_text_paragraph(f'{gas_type.lower()}')
             elif gas_type == 'Diesel':
-                my_text_paragraph('<b>Raw Data - Diesel</b>')
+                my_text_paragraph('<b>Diesel</b>')
             
             # Show lottie animation in Streamlit 
             show_lottie_animation(url = './images/animation_lkhk7c4h.json', key = 'oil', width=160, speed = 1, col_sizes = [45,40,40])
@@ -1023,8 +1029,12 @@ def main():
             # Display the data in Streamlit
             st.markdown('---')
             
-            # Header
-            my_text_paragraph('<b>Raw Data - Electricity</b>')
+            # set header
+            #my_text_header('Raw Data', my_font_size='48px', my_font_family='Bad Script')
+            vertical_spacer(2)
+            
+            # set subheader
+            my_text_paragraph('<b>Electricity</b>')
             
             # Show animation in Streamlit 
             show_lottie_animation(url = './images/animation_lkj56bhq.json', key = 'electricity', width=160, speed = 1, col_sizes = [45,40,40])
@@ -1244,7 +1254,8 @@ def main():
     # Disclaimer
     with tab6:
         with st.expander('', expanded=True):
-            my_text_header('Disclaimer', my_font_size='48px')
+            vertical_spacer(1)
+            my_text_header('Disclaimer', my_font_size='48px', my_font_family='Poiret One')
             col1, col2, col3 = st.columns([1, 10, 1])
             with col2:
                 vertical_spacer(2)
