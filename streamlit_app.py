@@ -947,7 +947,7 @@ def main():
         
         # if user did not press submit button on dashboard tab
         else:
-            create_flipcard_gasoline(image_path_front_card ='./images/COVER_GASOLINE.PNG', 
+            create_flipcard_gasoline(image_path_front_card ='./images/cover_gasoline.png', 
                                      font_size_back='16px') #Show Cover Image
     
     # PLOTS
