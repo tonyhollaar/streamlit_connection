@@ -5,6 +5,7 @@
 
 # App Description
 [This application](https://bls-connection-demo.streamlit.app/) is created as part of the **Streamlit Connections Hackathon 🎉** [contest](https://discuss.streamlit.io/t/connections-hackathon/47574). The goal of this app is to demonstrate how to easily set up and retrieve data from one of my favorite data **APIs** (Application Programming Interfaces) – the public datasets from the *U.S. Bureau of Labor Statistics* (BLS) – by utilizing a custom-built **Streamlit** connection 🔌. This allows you to query the dataset(s) and save them as [pandas](https://pandas.pydata.org/) dataframes, providing a more user-friendly approach compared to the original Python code from BLS, which can be found [here](https://www.bls.gov/developers/api_python.htm#python2).
+Feel free to explore the app's demonstration video below (🔊 make sure to have the sound on for some background music 🎵).
 
 https://github.com/tonyhollaar/streamlit_connection/assets/121459374/7a25b2e3-baba-4e23-accf-9781b9f09a4c
 
