@@ -749,8 +749,11 @@ def main():
                 # =============================================================================
                 # Step 3: Fetch data using the custom connection
                 # =============================================================================
-                # Get the API key from Streamlit secrets
-                api_key_secrets = st.secrets["connections_bls"]["api_key"]
+                try:
+                    # Get the API key from Streamlit secrets
+                    api_key_secrets = st.secrets["connections_bls"]["api_key"]
+                except:
+                    api_key_secrets = None
                 
                 # Check if the user has provided an API key through the form
                 if api_key_input:
