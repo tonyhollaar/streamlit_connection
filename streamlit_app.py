@@ -32,7 +32,8 @@ import json  # JSON library for working with JSON data
 import base64  # Base64 library for encoding and decoding binary data
 import numpy as np  # NumPy library for numerical operations
 import requests  # Requests library for making HTTP requests
-
+from PIL import Image
+            
 # to convert img to html
 # source: https://github.com/dataprofessor/st-demo-image-markdown/tree/master
 from utilities import load_bootstrap  # Custom utility function for loading Bootstrap CSS
@@ -100,6 +101,8 @@ st.markdown("""
             }
             </style>
             """, unsafe_allow_html=True)
+
+# bootstrap icon            
 search_icon = """
 <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" fill="currentColor" class="bi bi-search" viewBox="0 0 16 16">
   <path d="M11.742 10.344a6.5 6.5 0 1 0-1.397 1.398h-.001c.03.04.062.078.098.115l3.85 3.85a1 1 0 0 0 1.415-1.414l-3.85-3.85a1.007 1.007 0 0 0-.115-.1zM12 6.5a5.5 5.5 0 1 1-11 0 5.5 5.5 0 0 1 11 0z"/>
@@ -631,24 +634,24 @@ def rounded_image(image_path, corner_radius):
 
 def main():
     # =============================================================================
-    # Define variables
+    # Initialize variables
     # =============================================================================
-    gas_df = pd.DataFrame()
-    electricity_df = pd.DataFrame()
-    latest_value = None
-    metric = None
+    gas_df = pd.DataFrame() # to save gasoline prices
+    electricity_df = pd.DataFrame() # to save electricity prices
+    metric = None # Imperial System / Metric System
     latest_value_gas = None #initialize variable for holding latest gasoline price value in USD
                 
     # Define user tabs in Streamlit
     tab1, tab2, tab3, tab4, tab5, tab6 = st.tabs(['🛡️ Dashboard', '📈 Plots', '🔢 Raw Data', '🛣️ Route66', 'ℹ️ Streamlit Connection API', '📜 Disclaimer'])
     with tab1:
         with st.sidebar:
-            from PIL import Image
+
             gaspricewatcher_logo = Image.open('./images/gaspricewatcher.png')
-            
             st.image(gaspricewatcher_logo) #display logo
             
-            # Display user form with options to filter data in sidebar
+            # =============================================================================
+            #             # Display user form with options to filter data in sidebar
+            # =============================================================================
             with st.sidebar.form("user_form"):
                 my_text_paragraph('User Settings')
                 start_year, end_year = st.select_slider(label = "📆 Select Date Range", 
@@ -748,6 +751,13 @@ def main():
                 # =============================================================================
                 # Step 3: Fetch data using the custom connection
                 # =============================================================================
+               
+                # =============================================================================
+                # [OPTIONAL] Retrieve the API key from Streamlit secrets -> not needed but higher amount of daily queries allowed e.g. 500 versus 25                
+                # register at https://data.bls.gov/registrationEngine/ to obtain your API key and put it in .streamlit/secrets.toml file
+                # [connections.bls]
+                # api_key = "XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX"
+                # =============================================================================
                 try:
                     # Get the API key from Streamlit secrets
                     api_key_secrets = st.secrets["connections_bls"]["api_key"]
@@ -770,12 +780,6 @@ def main():
                 dataframes_dict = conn.query(seriesids_list, start_year_str, end_year_str, api_key=api_key, catalog=True, calculations=True, annualaverage=True, aspects=True)
                 #dataframes_dict = conn.query(seriesids_list, start_year_str, end_year_str, api_key=None) # TEST
     
-                # =============================================================================
-                # [OPTIONAL] Retrieve the API key from Streamlit secrets -> not needed but higher amount of daily queries allowed e.g. 500 versus 25                
-                # register at https://data.bls.gov/registrationEngine/ to obtain your API key and put it in .streamlit/secrets.toml file
-                # [connections.bls]
-                # api_key = "XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX"
-                # =============================================================================
                 try:     
                     # Assign individual dataframes to named variables using tuple unpacking
                     gas_type_dict = {'regular': 'APU000074714', 'midgrade': 'APU000074715', 'premium': 'APU000074716', 'diesel': 'APU000074717'}
