@@ -970,8 +970,8 @@ def main():
         # if user did not press submit button on dashboard tab
         else:
             image_url = 'https://raw.githubusercontent.com/tonyhollaar/streamlit_connection/main/images/COVER_GASOLINE.png'
-            create_flipcard_gasoline(image_path_front_card = image_url,
-                                     #image_path_front_card ='./images/cover_gasoline.png', 
+            create_flipcard_gasoline(#image_path_front_card = image_url,
+                                     image_path_front_card ='./images/cover_gasoline.png', 
                                      font_size_back='16px') #Show Cover Image
     
     # PLOTS
