@@ -141,7 +141,7 @@ When reporting an issue, please provide as much detail as possible, including th
 
 Thank you for your contributions to making this package better!
 
-## Acknowledgments
+## Acknowledgements
 Special thanks 👏 to the Streamlit team for creating an amazing framework for building interactive web apps with Python.
 
 ## How do I obtain an API Key?
