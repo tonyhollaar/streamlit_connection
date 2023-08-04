@@ -161,10 +161,12 @@ def show_lottie_animation(url, key, reverse=False, height=400, width=400, speed=
         vertical_spacer(margin_after)
 
 def create_flipcard_gasoline(image_path_front_card = None, font_size_back='10px', my_header='', **kwargs):
-    # Open the image for the front of the card
-    with open(image_path_front_card, 'rb') as file:
-        contents = file.read()
-        data_url = base64.b64encode(contents).decode("utf-8")
+# =============================================================================
+#     # Open the image for the front of the card
+#     with open(image_path_front_card, 'rb') as file:
+#         contents = file.read()
+#         data_url = base64.b64encode(contents).decode("utf-8")
+# =============================================================================
 
     # Create empty list that will keep the HTML code needed for each card with header+text
     card_html = []
@@ -173,7 +175,7 @@ def create_flipcard_gasoline(image_path_front_card = None, font_size_back='10px'
     card_html.append(f"""
         <div class="flashcard">
             <div class='front'>
-                <img src="data:image/png;base64,{data_url}" style="width: 100%; height: 100%; object-fit: cover; border-radius: 10px;">
+                <img src="data:image/png;base64,https://raw.githubusercontent.com/tonyhollaar/streamlit_connection/main/images/COVER_GASOLINE.png" style="width: 100%; height: 100%; object-fit: cover; border-radius: 10px;">
             </div>
             <div class="back">
                 <h2>Instructions</h2>
@@ -947,7 +949,7 @@ def main():
         
         # if user did not press submit button on dashboard tab
         else:
-            create_flipcard_gasoline(image_path_front_card ='https://raw.githubusercontent.com/tonyhollaar/streamlit_connection/main/images/COVER_GASOLINE.png', 
+            create_flipcard_gasoline(image_path_front_card = None, 
                                      font_size_back='16px') #Show Cover Image
     
     # PLOTS
