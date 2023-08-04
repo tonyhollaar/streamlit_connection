@@ -627,9 +627,9 @@ def main():
     with tab1:
         with st.sidebar:
             from PIL import Image
-            image = Image.open('./images/gaspricewatcher.png')
+            gaspricewatcher_logo = Image.open('./images/gaspricewatcher.png')
             
-            st.image('image') #display logo
+            st.image(gaspricewatcher_logo) #display logo
             
             # Display user form with options to filter data in sidebar
             with st.sidebar.form("user_form"):
