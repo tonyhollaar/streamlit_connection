@@ -196,7 +196,7 @@ def create_flipcard_gasoline(image_path_front_card=None, font_size_back='10px', 
                 <h2>Instructions</h2>
                 <p>
                     <br>
-                    <b>step 1:</b> Select your <b>date range</b> for retrieving historical U.S. gas prices*
+                    <b>step 1:</b> Select your <b>date range</b> for retrieving historical U.S. gasoline prices*
                     <br>
                     <b>step 2:</b> Choose a <b>metric</b> for assessment i.e. <i>gallons</i> or <i>liters</i>
                     <br>

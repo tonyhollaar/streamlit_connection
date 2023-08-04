@@ -38,7 +38,7 @@ start_year_str = '2014' # start of date range
 end_year_str = '2023'   # end of date range
 
 # Step 3: Fetch data using the custom connection
-dataframes_dict = connection.query(seriesids_list,
+dataframes_dict = conn.query(seriesids_list,
                                    start_year_str, 
                                    end_year_str,
                                    api_key = None)
