@@ -1225,7 +1225,7 @@ def main():
                 my_text_paragraph('''The gasoline, diesel, electricity prices and comparison displayed on this app are for <b><span style="color: #456cff;">informational purposes</span></b> only. 
                                   Data sourced from the U.S. Bureau of Labor Statistics (BLS.gov) is provided <b><span style="color: #456cff;">without any warranty or guarantee</span></b>  of <b><span style="color: #456cff;">accuracy</span></b> or <b><span style="color: #456cff;">reliability</span></b>. 
                                   The creator does <b><span style="color: #456cff;">not</span></b> provide financial, investment, or consumption advice. Users are advised to verify the data from official sources and seek professional advice before making any financial or consumption-related decisions. 
-                                  By using this app, <b><span style="color: #456cff;">you agree</span></b> that the creator shall <b><span style="color: #456cff;">not</span></b> be held liable for any actions or decisions based on the information provided. Use this app at your own discretion. <b><span style="color: #999999;">Thank you for your understanding!</span></b>
+                                  By using this app, <b><span style="color: #456cff;">you agree</span></b> that the creator shall <b><span style="color: #456cff;">not</span></b> be held liable for any actions or decisions based on the information provided. Use this app at your own discretion. <b><span style="color: #6f6f74; font-family: Permanent Marker;">Thank you for your understanding!</span></b>
                                   ''', my_text_align='justify')
             col1, col2, col3 = st.columns([2,8,2])
             with col2:
