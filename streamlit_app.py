@@ -31,6 +31,7 @@ from streamlit_lottie import st_lottie
 import json
 import base64
 import numpy as np
+from pathlib import Path
 
 # =============================================================================
 #   _____        _____ ______    _____ ______ _______ _    _ _____  
@@ -107,6 +108,17 @@ search_icon = """
 #  |_|     \____/|_| \_|\_____|  |_|  |_____\____/|_| \_|_____/ 
 #                                                               
 # =============================================================================
+def img_to_bytes(img_path):
+    img_bytes = Path(img_path).read_bytes()
+    encoded = base64.b64encode(img_bytes).decode()
+    return encoded
+
+def img_to_html(img_path):
+    img_html = "<img src='data:image/png;base64,{}' class='img-fluid'>".format(
+      img_to_bytes(img_path)
+    )
+    return img_html
+
 def my_text_header(my_string,
                    my_text_align='center', 
                    my_font_family='Lobster, cursive;',
@@ -167,7 +179,8 @@ def create_flipcard_gasoline(image_path_front_card = None, font_size_back='10px'
 #         contents = file.read()
 #         data_url = base64.b64encode(contents).decode("utf-8")
 # =============================================================================
-
+    front_image_html = img_to_html(image_path_front_card)
+    
     # Create empty list that will keep the HTML code needed for each card with header+text
     card_html = []
 
@@ -175,7 +188,8 @@ def create_flipcard_gasoline(image_path_front_card = None, font_size_back='10px'
     card_html.append(f"""
         <div class="flashcard">
             <div class='front'>
-                <img src="{image_path_front_card}" style="width: 100%; height: 100%; object-fit: cover; border-radius: 10px;">
+               /* <img src="{image_path_front_card}" style="width: 100%; height: 100%; object-fit: cover; border-radius: 10px;"> */
+               {front_image_html}
             </div>
             <div class="back">
                 <h2>Instructions</h2>
