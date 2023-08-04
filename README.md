@@ -1,12 +1,15 @@
 ![gaspricewatcher_logo](./images/gaspricewatcher.png)
 [![Streamlit App](https://static.streamlit.io/badges/streamlit_badge_black_white.svg)](https://bls-connection-demo.streamlit.app/)
+![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)
+![Python: 3.8+](https://img.shields.io/badge/Python-3.8+-blue.svg)
+![PyPI Version](https://img.shields.io/pypi/v/streamlit-bls-connection.svg)
 
-# Description
+# App Description
 [This application](https://bls-connection-demo.streamlit.app/) is created as part of the **Streamlit Connections Hackathon 🎉** [contest](https://discuss.streamlit.io/t/connections-hackathon/47574). The goal of this app is to demonstrate how to easily set up and retrieve data from one of my favorite data **APIs** (Application Programming Interfaces) – the public datasets from the *U.S. Bureau of Labor Statistics* (BLS) – by utilizing a custom-built **Streamlit** connection 🔌. This allows you to query the dataset(s) and save them as [pandas](https://pandas.pydata.org/) dataframes, providing a more user-friendly approach compared to the original Python code from BLS, which can be found [here](https://www.bls.gov/developers/api_python.htm#python2).
 
 https://github.com/tonyhollaar/streamlit_connection/assets/121459374/7a25b2e3-baba-4e23-accf-9781b9f09a4c
 
-## Features
+## App Features
 
 - Display data retrieved from the BLS API in a user-friendly manner using Streamlit.
 - Visualize datasets with interactive charts and plots.
@@ -27,6 +30,7 @@ https://github.com/tonyhollaar/streamlit_connection/assets/121459374/7a25b2e3-ba
 - [Reporting Issues](#reporting-issues)
 - [Acknowledgements](#acknowledgements)
 - [How do I obtain an API Key?](#how-do-i-obtain-an-api-key)
+- [How do I use the API Key?](#how-do-i-use-the-api-key)
 - [Use in Google Colab](#use-in-google-colab)
 - [Streamlit Demo](#streamlit-demo)
 
@@ -162,6 +166,16 @@ To obtain your API key, follow these steps:
 Please note that the `api_key` parameter in the `connection.query()` method is optional. If you don't provide an API key, you might be subject to limitations on the number of requests you can make. However, you can still use the package without an API key, but with potential restrictions on the data you can access.
 
 Having an API key will provide you with a more comprehensive and seamless experience when working with the BLS API.
+
+## How do I use the API Key?
+There are two options:
+
+1. Enter the API key in the sidebar of the application.
+2. If you cloned this repository and run it locally on your machine you can add a secrets.toml file with the following text and 'save' the file:
+```Python
+[bls_connection]
+'XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX'
+``` 
 
 ## Use in Google Colab
 If you want to try it out in the cloud ☁️, to see the `streamlit-bls-connection` with a Streamlit app in action, you can click the link below!
