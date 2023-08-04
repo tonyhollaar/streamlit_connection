@@ -25,7 +25,7 @@ https://github.com/tonyhollaar/streamlit_connection/assets/121459374/7a25b2e3-ba
 - [License](#license)
 - [Contact](#contact)
 - [Reporting Issues](#reporting-issues)
-- [Acknowledgments](#acknowledgements)
+- [Acknowledgements](#acknowledgements)
 - [How do I obtain an API Key?](#how-do-i-obtain-an-api-key)
 - [Use in Google Colab](#use-in-google-colab)
 - [Streamlit Demo](#streamlit-demo)
