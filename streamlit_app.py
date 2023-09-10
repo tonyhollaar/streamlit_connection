@@ -1163,7 +1163,7 @@ def main():
             df["color"] = colors
         
             # Display the map using st.map with size and color
-            st.map(df, latitude='latitude', longitude='longitude', size='size', color='color')
+            st.map(df, latitude='latitude', longitude='longitude', size='size', color='color', zoom=3)
             st.dataframe(df, use_container_width = True)
             st.image('./images/route66_logo.png')
             st.caption('''Disclaimer: This app provides information about selected locations along Route 66 but does not cover all places. It is intended for general informational purposes only and does not serve as a comprehensive travel guide. Users are encouraged to verify details and consult official travel resources for a complete representation of locations along Route 66. The app's creator makes no warranties about the accuracy or reliability of the content and shall not be held liable for any damages or losses arising from its use. Use this app responsibly and enjoy your journey along Route 66!''')
