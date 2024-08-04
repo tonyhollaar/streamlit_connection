@@ -733,7 +733,7 @@ def main():
                 # =============================================================================
                 # Step 1: Create Connection object with U.S. Bureau of Labor Statistics API
                 # =============================================================================
-                conn = st.experimental_connection('bls', type=BLSConnection)
+                conn = st.connection('bls', type=BLSConnection)
     
                 # =============================================================================
                 # Step 2: Input parameters for the API call
